@@ -1,0 +1,3 @@
+[submodule "AutoEq"]
+	path = AutoEq
+	url = https://github.com/jaakkopasanen/AutoEq.git

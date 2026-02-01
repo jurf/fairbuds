@@ -1,0 +1,28 @@
+# Extended EQ configuration for Fairbuds
+optimizer:
+  max_f: 10000
+  max_time: null  # Letting optimizer finish since this is probably for a one-off custom optimization, not for API
+  min_change_rate: null  # Letting optimizer finish
+  min_std: null  # Letting optimizer finish
+filter_defaults:
+  min_gain: -12
+  max_gain: 13.5
+  min_q: 0.1
+  max_q: 25.5
+filters:
+  - type: PEAKING
+    fc: 60
+  - type: PEAKING
+    fc: 100
+  - type: PEAKING
+    fc: 230
+  - type: PEAKING
+    fc: 500
+  - type: PEAKING
+    fc: 1100
+  - type: PEAKING
+    fc: 2400
+  - type: PEAKING
+    fc: 5400
+  - type: PEAKING
+    fc: 12000
