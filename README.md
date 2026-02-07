@@ -35,6 +35,9 @@ This project uses the [uv](https://docs.astral.sh/uv/) Python package manager. T
 # Linux/macOS
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
+# macOS with brew
+brew install uv
+
 # Or with pipx
 pipx install uv
 ```
@@ -49,11 +52,13 @@ uv sync
 The BLE address **might be different** to the audio (BR/EDR) address shown in Bluetooth settings.
 
 ```bash
-# Start LE scan
-bluetoothctl scan le
+# Start BLE scan
+uv run fairbuds --scan
 
 # Look for your Fairbuds in the list, e.g.:
-# [NEW] Device 00:11:22:33:44:55 Fairbuds
+#   00:11:22:33:44:55    -96 dBm  Fairbuds
+# macOS:
+#   A1F7C2D9-4B8E-9A3F-16D2-7C5B8E0F4A12    ?? dBm  Fairbuds
 ```
 
 ## Usage
@@ -72,6 +77,7 @@ load rtings_studio
 
 ```bash
 uv run fairbuds --version           # Show version
+uv run fairbuds --scan              # Scan and list BLE devices
 uv run fairbuds --list-presets      # List available AutoEQ presets
 uv run fairbuds 00:11:22:33:44:55   # Connect to device
 ```

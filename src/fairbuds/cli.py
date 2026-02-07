@@ -192,10 +192,8 @@ async def interactive_mode(eq: FairbudsEQ) -> None:
                 try:
                     devices = await BleakScanner.discover(timeout=5.0)
                     print(info(f"Found {len(devices)} BLE devices:"))
-                    for d in sorted(
-                        devices, key=lambda x: x.rssi or -100, reverse=True
-                    ):
-                        rssi = f"{d.rssi:4d} dBm" if d.rssi else "  ?? dBm"
+                    for d in sorted(devices, key=lambda x: getattr(x, 'rssi', -100), reverse=True):
+                        rssi = f"{d.rssi:4d} dBm" if getattr(d, 'rssi', None) else "  ?? dBm"
                         name = d.name or "(unknown)"
                         marker = " ←" if d.address.upper() == eq.address.upper() else ""
                         print(f"  {d.address}  {rssi}  {name}{marker}")
@@ -481,8 +479,8 @@ async def scan_devices() -> None:
     try:
         devices = await BleakScanner.discover(timeout=5.0)
         print(info(f"Found {len(devices)} BLE devices:"))
-        for d in sorted(devices, key=lambda x: x.rssi or -100, reverse=True):
-            rssi = f"{d.rssi:4d} dBm" if d.rssi else "  ?? dBm"
+        for d in sorted(devices, key=lambda x: getattr(x, 'rssi', -100), reverse=True):
+            rssi = f"{d.rssi:4d} dBm" if getattr(d, 'rssi', None) else "  ?? dBm"
             name = d.name or "(unknown)"
             print(f"  {d.address}  {rssi}  {name}")
     except Exception as e:
