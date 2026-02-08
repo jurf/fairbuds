@@ -64,7 +64,7 @@ uv run fairbuds --scan
 ## Usage
 
 ```bash
-uv run fairbuds --help
+uv run fairbuds 00:11:22:33:44:55   # Replace with your Fairbuds BLE address
 ```
 
 Type `help` in the interactive CLI for more details on available commands. If you just want to try the best preset, type:
@@ -76,10 +76,10 @@ load rtings_studio
 ### Command-line options
 
 ```bash
+uv run fairbuds --help              # Show help
 uv run fairbuds --version           # Show version
 uv run fairbuds --scan              # Scan and list BLE devices
 uv run fairbuds --list-presets      # List available AutoEQ presets
-uv run fairbuds 00:11:22:33:44:55   # Connect to device
 ```
 
 ## Project structure
