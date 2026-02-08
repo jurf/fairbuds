@@ -123,7 +123,7 @@ The actual interpretation is undocumented (if any calculations were present, the
 
 This would mean the default is 0.7 with a range of 0.1–25.5, which is reasonable. It would also match the Fairbuds XL's 2023 default value (which is directly visible in the decompiled code).
 
-Changing this value manually seems to affect the sound seemingly linearly, with the full range affecting the sound. But ultimately, it results in a meaningful improvement to the sound, so for now it's _good enough_.
+Changing this value manually seems to affect the sound seemingly linearly, with the full range affecting the sound, and seems to match a software emulation with the same settings. But ultimately, it results in a meaningful improvement to the sound, so for now it's _good enough_.
 
 It is worth mentioning though that [manually calculating](https://github.com/jaakkopasanen/AutoEq/wiki/Custom-Parametric-Eq#custom-graphic-equalizer) the value for the given bands would bring it closer to 1.2.
 
