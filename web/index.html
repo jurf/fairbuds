@@ -1,464 +1,476 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fairbuds EQ</title>
-    <style>
-      :root {
-        --bg: #1a1a2e;
-        --surface: #16213e;
-        --surface2: #0f3460;
-        --accent: #e94560;
-        --accent-dim: #a83249;
-        --text: #eee;
-        --text-dim: #999;
-        --green: #4ecca3;
-        --yellow: #f0c040;
-        --red: #e94560;
-        --radius: 8px;
-      }
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fairbuds EQ</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --surface2: #0f3460;
+      --accent: #e94560;
+      --accent-dim: #a83249;
+      --text: #eee;
+      --text-dim: #999;
+      --green: #4ecca3;
+      --yellow: #f0c040;
+      --red: #e94560;
+      --radius: 8px;
+    }
 
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-      }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-      h1 {
-        font-size: 1.6rem;
-        margin-bottom: 4px;
-        letter-spacing: 1px;
-      }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
 
-      .subtitle {
-        color: var(--text-dim);
-        font-size: 0.85rem;
-        margin-bottom: 20px;
-      }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
 
-      .card {
-        background: var(--surface);
-        border-radius: var(--radius);
-        padding: 20px;
-        width: 100%;
-        max-width: 680px;
-        margin-bottom: 16px;
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
 
-        h2 {
-          font-size: 1rem;
-          color: var(--text-dim);
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
-        }
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      width: 100%;
+      max-width: 680px;
+      margin-bottom: 16px;
 
-        h3 {
-          margin: 12px 0;
-        }
-      }
-
-      /* Connection */
-      #connect-btn {
-        background: var(--accent);
-        color: #fff;
-        border: none;
-        padding: 12px 28px;
-        border-radius: var(--radius);
+      h2 {
         font-size: 1rem;
-        cursor: pointer;
-        transition: background 0.2s;
-
-        &:hover {
-          background: var(--accent-dim);
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      }
-
-      #disconnect-btn {
-        background: transparent;
         color: var(--text-dim);
-        border: 1px solid var(--text-dim);
-        padding: 12px 20px;
-        border-radius: var(--radius);
-        font-size: 0.9rem;
-        cursor: pointer;
-        margin-left: 8px;
-        display: none;
-
-        &:hover {
-          border-color: var(--red);
-          color: var(--red);
-        }
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
       }
 
-      .conn-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+      h3 {
+        margin: 12px 0;
+      }
+    }
+
+    /* Connection */
+    #connect-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: var(--accent-dim);
       }
 
-      #status {
-        color: var(--text-dim);
-        font-size: 0.9rem;
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
 
-        &.connected {
-          color: var(--green);
-        }
+    #disconnect-btn {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--text-dim);
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-left: 8px;
+      display: none;
 
-        &.error {
-          color: var(--red);
-        }
+      &:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+    }
+
+    .conn-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    #status {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+
+      &.connected {
+        color: var(--green);
       }
 
-      /* Battery */
-      .battery-row {
-        display: flex;
-        gap: 24px;
-        align-items: center;
-        flex-wrap: wrap;
+      &.error {
+        color: var(--red);
+      }
+    }
+
+    /* Battery */
+    .battery-row {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .battery-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .battery-icon {
+      font-size: 1.3rem;
+    }
+
+    .battery-val {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .battery-label {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+
+    #device-name {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-left: auto;
+    }
+
+    /* Presets */
+    .preset-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      position: relative;
+      background: var(--surface2);
+      color: var(--text);
+      border: 2px solid transparent;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: var(--accent);
       }
 
-      .battery-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+      &.active {
+        border-color: var(--accent);
+        background: var(--accent-dim);
       }
 
-      .battery-icon {
-        font-size: 1.3rem;
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
       }
 
-      .battery-val {
-        font-size: 1.2rem;
+      .badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: var(--yellow);
+        color: var(--bg);
+        font-size: 0.55rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 4px;
+        line-height: 1;
+        pointer-events: none;
+      }
+    }
+
+    /* EQ */
+    .eq-container {
+      display: flex;
+      gap: 6px;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 280px;
+      padding-top: 20px;
+    }
+
+    .eq-band {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      height: 100%;
+
+      .db-val {
+        font-size: 0.75rem;
+        color: var(--green);
         font-weight: 600;
+        min-height: 20px;
+        margin-bottom: 4px;
       }
 
-      .battery-label {
-        color: var(--text-dim);
-        font-size: 0.8rem;
-      }
-
-      #device-name {
-        color: var(--text-dim);
-        font-size: 0.85rem;
-        margin-left: auto;
-      }
-
-      /* Presets */
-      .preset-row {
+      .slider-wrap {
+        flex: 1;
         display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 0;
       }
 
-      .preset-btn {
-        position: relative;
+      input[type="range"] {
+        writing-mode: vertical-lr;
+        direction: rtl;
+        appearance: none;
+        width: 6px;
+        height: 100%;
+        background: var(--surface2);
+        border-radius: 3px;
+        outline: none;
+        accent-color: var(--accent);
+        cursor: pointer;
+
+        &::-webkit-slider-thumb {
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: var(--accent);
+          cursor: pointer;
+          border: none;
+        }
+
+        &::-webkit-slider-runnable-track {
+          background: var(--surface2);
+          border-radius: 3px;
+        }
+      }
+
+      .freq-label {
+        font-size: 0.7rem;
+        color: var(--text-dim);
+        margin-top: 6px;
+        white-space: nowrap;
+      }
+    }
+
+    .eq-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+
+      button {
         background: var(--surface2);
         color: var(--text);
-        border: 2px solid transparent;
-        padding: 10px 20px;
+        border: 1px solid var(--text-dim);
+        padding: 8px 16px;
         border-radius: var(--radius);
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         cursor: pointer;
         transition: all 0.2s;
 
         &:hover {
           border-color: var(--accent);
-        }
-
-        &.active {
-          border-color: var(--accent);
-          background: var(--accent-dim);
+          color: var(--accent);
         }
 
         &:disabled {
           opacity: 0.4;
           cursor: not-allowed;
         }
+      }
+    }
 
-        .badge {
-          position: absolute;
-          top: -6px;
-          right: -6px;
-          background: var(--yellow);
-          color: var(--bg);
-          font-size: 0.55rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          padding: 2px 6px;
-          border-radius: 4px;
-          line-height: 1;
-          pointer-events: none;
-        }
+    /* Log */
+    #log {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: var(--radius);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .github-link {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      color: var(--text-dim);
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--text);
       }
 
-      /* EQ */
-      .eq-container {
-        display: flex;
-        gap: 6px;
-        justify-content: space-between;
-        align-items: flex-end;
-        height: 280px;
-        padding-top: 20px;
+      svg {
+        width: 28px;
+        height: 28px;
+        fill: currentColor;
       }
+    }
 
-      .eq-band {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        flex: 1;
-        height: 100%;
+    footer {
+      margin-top: 24px;
+      padding: 16px 0;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-dim);
 
-        .db-val {
-          font-size: 0.75rem;
-          color: var(--green);
-          font-weight: 600;
-          min-height: 20px;
-          margin-bottom: 4px;
-        }
-
-        .slider-wrap {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          min-height: 0;
-        }
-
-        input[type="range"] {
-          writing-mode: vertical-lr;
-          direction: rtl;
-          appearance: none;
-          width: 6px;
-          height: 100%;
-          background: var(--surface2);
-          border-radius: 3px;
-          outline: none;
-          accent-color: var(--accent);
-          cursor: pointer;
-
-          &::-webkit-slider-thumb {
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
-            border: none;
-          }
-
-          &::-webkit-slider-runnable-track {
-            background: var(--surface2);
-            border-radius: 3px;
-          }
-        }
-
-        .freq-label {
-          font-size: 0.7rem;
-          color: var(--text-dim);
-          margin-top: 6px;
-          white-space: nowrap;
-        }
-      }
-
-      .eq-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 14px;
-        flex-wrap: wrap;
-
-        button {
-          background: var(--surface2);
-          color: var(--text);
-          border: 1px solid var(--text-dim);
-          padding: 8px 16px;
-          border-radius: var(--radius);
-          font-size: 0.8rem;
-          cursor: pointer;
-          transition: all 0.2s;
-
-          &:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-          }
-
-          &:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-          }
-        }
-      }
-
-      /* Log */
-      #log {
-        font-family: "SF Mono", "Fira Code", monospace;
-        font-size: 0.75rem;
-        color: var(--text-dim);
-        max-height: 160px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        word-break: break-all;
-        background: rgba(0, 0, 0, 0.3);
-        padding: 10px;
-        border-radius: var(--radius);
-      }
-
-      .hidden {
-        display: none !important;
-      }
-
-      .github-link {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        color: var(--text-dim);
-        transition: color 0.2s;
+      a {
+        color: var(--accent);
+        text-decoration: none;
 
         &:hover {
-          color: var(--text);
-        }
-
-        svg {
-          width: 28px;
-          height: 28px;
-          fill: currentColor;
+          text-decoration: underline;
         }
       }
 
-      footer {
-        margin-top: 24px;
-        padding: 16px 0;
-        text-align: center;
-        font-size: 0.8rem;
+      .disclaimer {
+        margin-top: 6px;
+        font-size: 0.75rem;
         color: var(--text-dim);
+      }
+    }
 
-        a {
-          color: var(--accent);
-          text-decoration: none;
-
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-
-        .disclaimer {
-           margin-top: 6px;
-           font-size: 0.75rem;
-           color: var(--text-dim);
-         }
+    @media (max-width: 500px) {
+      .eq-container {
+        gap: 2px;
       }
 
-      @media (max-width: 500px) {
-        .eq-container {
-          gap: 2px;
-        }
-        .eq-band .freq-label {
-          font-size: 0.6rem;
-        }
-        .card {
-          padding: 14px;
-        }
+      .eq-band .freq-label {
+        font-size: 0.6rem;
       }
-    </style>
-  </head>
-  <body>
-    <a class="github-link" href="https://github.com/jurf/fairbuds" target="_blank" rel="noopener noreferrer" title="GitHub">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+
+      .card {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="github-link" href="https://github.com/jurf/fairbuds" target="_blank" rel="noopener noreferrer"
+    title="GitHub">
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  </a>
+
+  <h1>🎧 Fairbuds EQ</h1>
+  <p class="subtitle">Fairphone Fairbuds — Web Bluetooth Control</p>
+
+  <!-- Connection -->
+  <div class="card">
+    <h2>Connection</h2>
+    <div class="conn-row">
+      <button id="connect-btn">Connect</button>
+      <button id="disconnect-btn">Disconnect</button>
+      <span id="status">Not connected</span>
+    </div>
+  </div>
+
+  <!-- Device Info -->
+  <div class="card hidden" id="info-card">
+    <h2>Device Info</h2>
+    <div class="battery-row">
+      <div class="battery-item">
+        <span class="battery-icon">🔋</span>
+        <div>
+          <div class="battery-val" id="bat-left">—</div>
+          <div class="battery-label">Left</div>
+        </div>
+      </div>
+      <div class="battery-item">
+        <span class="battery-icon">🔋</span>
+        <div>
+          <div class="battery-val" id="bat-right">—</div>
+          <div class="battery-label">Right</div>
+        </div>
+      </div>
+      <span id="device-name"></span>
+    </div>
+  </div>
+
+  <!-- Presets -->
+  <div class="card hidden" id="presets-card">
+    <h2>Presets</h2>
+
+    <h3>Built-in</h3>
+    <div class="preset-row">
+      <button class="preset-btn" data-preset="1">Main</button>
+      <button class="preset-btn" data-preset="2">Bass Boost</button>
+      <button class="preset-btn" data-preset="3">Flat</button>
+      <button class="preset-btn" data-preset="4">Studio</button>
+    </div>
+
+    <h3>Custom (Full EQ)</h3>
+    <div class="preset-row" id="custom-presets"></div>
+
+    <h3>Custom (App-compatible)</h3>
+    <div class="preset-row" id="app-presets"></div>
+  </div>
+
+  <!-- Custom EQ -->
+  <div class="card hidden" id="eq-card">
+    <h2>Custom EQ</h2>
+    <div class="eq-container" id="eq-sliders"></div>
+    <div class="eq-actions">
+      <button id="eq-apply">Apply EQ</button>
+      <button id="eq-reset">Reset Flat</button>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+
+  <footer>
+    <a href="https://github.com/jurf/fairbuds" target="_blank" rel="noopener noreferrer">
+      jurf/fairbuds on Github
     </a>
+    <div class="disclaimer">This website is not associated in any way with Fairphone.</div>
+  </footer>
 
-    <h1>🎧 Fairbuds EQ</h1>
-    <p class="subtitle">Fairphone Fairbuds — Web Bluetooth Control</p>
+  <script src="fairbuds.js"></script>
+</body>
 
-    <!-- Connection -->
-    <div class="card">
-      <h2>Connection</h2>
-      <div class="conn-row">
-        <button id="connect-btn">Connect</button>
-        <button id="disconnect-btn">Disconnect</button>
-        <span id="status">Not connected</span>
-      </div>
-    </div>
-
-    <!-- Device Info -->
-    <div class="card hidden" id="info-card">
-      <h2>Device Info</h2>
-      <div class="battery-row">
-        <div class="battery-item">
-          <span class="battery-icon">🔋</span>
-          <div>
-            <div class="battery-val" id="bat-left">—</div>
-            <div class="battery-label">Left</div>
-          </div>
-        </div>
-        <div class="battery-item">
-          <span class="battery-icon">🔋</span>
-          <div>
-            <div class="battery-val" id="bat-right">—</div>
-            <div class="battery-label">Right</div>
-          </div>
-        </div>
-        <span id="device-name"></span>
-      </div>
-    </div>
-
-    <!-- Presets -->
-    <div class="card hidden" id="presets-card">
-      <h2>Presets</h2>
-
-      <h3>Built-in</h3>
-      <div class="preset-row">
-        <button class="preset-btn" data-preset="1">Main</button>
-        <button class="preset-btn" data-preset="2">Bass Boost</button>
-        <button class="preset-btn" data-preset="3">Flat</button>
-        <button class="preset-btn" data-preset="4">Studio</button>
-      </div>
-
-      <h3>Custom</h3>
-      <div class="preset-row" id="custom-presets"></div>
-    </div>
-
-    <!-- Custom EQ -->
-    <div class="card hidden" id="eq-card">
-      <h2>Custom EQ</h2>
-      <div class="eq-container" id="eq-sliders"></div>
-      <div class="eq-actions">
-        <button id="eq-apply">Apply EQ</button>
-        <button id="eq-reset">Reset Flat</button>
-      </div>
-    </div>
-
-    <!-- Log -->
-    <div class="card">
-      <h2>Log</h2>
-      <div id="log"></div>
-    </div>
-
-    <footer>
-      <a href="https://github.com/jurf/fairbuds" target="_blank" rel="noopener noreferrer">
-        jurf/fairbuds on Github
-      </a>
-      <div class="disclaimer">This website is not associated in any way with Fairphone.</div>
-    </footer>
-
-    <script src="fairbuds.js"></script>
-  </body>
 </html>

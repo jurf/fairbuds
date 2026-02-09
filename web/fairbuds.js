@@ -34,29 +34,25 @@
   const RESPONSE_TIMEOUT = 5000;
 
   // =========================================================================
-  // Custom Presets (from presets/ directory — AutoEQ format)
+  // Custom Presets (from presets/ and presets_app/ directories — AutoEQ format)
   // Each entry: { name, bands: [[gain_db, q_real], ...] (8 bands) }
   // =========================================================================
 
+  // Full EQ presets (variable Q — requires custom protocol support)
   const CUSTOM_PRESETS = [
-    { name: "app10k", bands: [[3.0,0.71],[-0.9,0.71],[-4.1,0.71],[-0.4,0.71],[-5.5,0.71],[10.0,0.71],[-1.4,0.71],[3.7,0.71]] },
-    { name: "app12.5k", bands: [[2.9,0.71],[-0.8,0.71],[-4.0,0.71],[-0.6,0.71],[-5.1,0.71],[10.0,0.71],[-3.6,0.71],[10.0,0.71]] },
-    { name: "app12k", bands: [[2.9,0.71],[-0.8,0.71],[-4.0,0.71],[-0.6,0.71],[-5.1,0.71],[10.0,0.71],[-3.7,0.71],[10.0,0.71]] },
-    { name: "app15k", bands: [[2.9,0.71],[-0.8,0.71],[-4.1,0.71],[-0.5,0.71],[-5.2,0.71],[10.0,0.71],[-3.4,0.71],[10.0,0.71]] },
-    { name: "main-ish", bands: [[-1.0,0.71],[1.0,0.71],[2.0,0.71],[3.5,0.71],[1.0,0.71],[-3.0,0.71],[1.0,0.71],[1.0,0.71]] },
-    { name: "max10k", bands: [[-4.5,0.14],[8.4,0.20],[-7.8,0.51],[0.6,3.93],[-10.8,0.65],[13.5,0.39],[-5.5,1.30],[-5.0,8.38]] },
-    { name: "max11k", bands: [[-2.8,0.10],[9.0,0.29],[-10.6,0.37],[0.4,4.15],[-11.3,0.82],[13.5,0.21],[-8.8,1.20],[1.6,12.10]] },
-    { name: "max12.5k", bands: [[0.0,0.23],[6.6,0.45],[-12.0,0.36],[-1.6,4.80],[-11.7,0.84],[13.5,0.13],[-10.4,1.21],[4.3,16.45]] },
-    { name: "max12k", bands: [[-1.3,0.10],[7.9,0.36],[-12.0,0.37],[-1.3,4.71],[-11.5,0.84],[13.5,0.15],[-10.0,1.18],[3.0,14.78]] },
-    { name: "max13.3k", bands: [[-0.8,0.10],[6.9,0.42],[-12.0,0.37],[-1.5,5.57],[-11.7,0.78],[13.5,0.12],[-10.5,1.24],[5.2,17.26]] },
-    { name: "max15k", bands: [[-2.3,0.10],[7.2,0.36],[-12.0,0.42],[-2.9,6.16],[-12.0,0.74],[13.5,0.10],[-10.6,1.26],[3.3,14.84]] },
-    { name: "max20k", bands: [[-1.0,0.10],[6.5,0.46],[-12.0,0.39],[-1.4,4.94],[-12.0,0.74],[13.5,0.10],[-10.7,1.34],[8.9,11.56]] },
-    { name: "pre10k", bands: [[-11.6,0.10],[0.1,2.88],[4.7,0.10],[-8.5,0.26],[-1.6,6.64],[8.0,1.09],[-8.4,0.10],[7.2,2.67]] },
-    { name: "rtings", bands: [[-1.3,0.10],[3.6,5.32],[4.4,0.10],[0.1,24.95],[-12.0,0.10],[4.8,17.00],[-10.1,1.70],[12.8,0.10]] },
-    { name: "rtings_app", bands: [[3.5,0.71],[1.3,0.71],[-10.0,0.71],[0.0,0.71],[-8.1,0.71],[10.0,0.71],[-9.8,0.71],[6.0,0.71]] },
-    { name: "rtings_app_studio", bands: [[2.5,0.71],[2.3,0.71],[-8.0,0.71],[3.5,0.71],[-7.1,0.71],[7.0,0.71],[-8.8,0.71],[7.0,0.71]] },
-    { name: "rtings_studio", recommended: true, bands: [[-3.3,0.10],[3.6,5.32],[5.4,0.10],[2.6,24.95],[-12.0,0.10],[-1.8,17.00],[-10.1,1.70],[12.8,0.10]] },
-    { name: "senorbackdoor", bands: [[8.0,0.7],[-2.0,0.7],[-5.0,0.7],[2.0,0.7],[-2.0,0.7],[8.0,0.7],[1.0,0.7],[11.0,0.7]] },
+    { name: "rtings_treble", recommended: true, bands: [[-2.3, 0.10], [4.6, 5.32], [6.4, 0.10], [3.6, 24.95], [-11.0, 0.10], [1.8, 17.00], [-9.1, 1.70], [13.5, 0.10]] },
+    { name: "rtings_bass", bands: [[10.0, 0.80], [5.4, 1.77], [-10.0, 0.17], [5.7, 20.22], [3.8, 0.19], [-0.7, 17.99], [-9.8, 1.45], [4.8, 0.11]] },
+    { name: "dhrme", bands: [[-2.8, 0.17], [0.0, 7.38], [2.6, 0.17], [-8.8, 0.19], [0.1, 8.94], [8.1, 0.74], [-3.1, 1.73], [6.9, 0.63]] },
+    { name: "dhrme_anc", bands: [[4.0, 1.33], [1.9, 4.74], [2.7, 0.27], [-9.2, 0.11], [-1.6, 23.97], [13.4, 0.87], [0.6, 12.00], [7.9, 2.22]] },
+    { name: "main-ish", bands: [[-1.0, 0.71], [1.0, 0.71], [2.0, 0.71], [3.5, 0.71], [1.0, 0.71], [-3.0, 0.71], [1.0, 0.71], [1.0, 0.71]] },
+  ];
+
+  // App-compatible presets (fixed Q = 0.71 — works with the official Fairbuds app)
+  const APP_PRESETS = [
+    { name: "rtings", bands: [[4.5, 0.71], [1.8, 0.71], [-10.0, 0.71], [0.8, 0.71], [-7.4, 0.71], [10.0, 0.71], [-8.7, 0.71], [6.6, 0.71]] },
+    { name: "dhrme", bands: [[-0.9, 0.71], [-0.9, 0.71], [-5.0, 0.71], [-1.6, 0.71], [-4.3, 0.71], [7.8, 0.71], [-2.6, 0.71], [9.5, 0.71]] },
+    { name: "dhrme_anc", bands: [[-2.5, 0.71], [0.3, 0.71], [-7.3, 0.71], [-1.4, 0.71], [-8.8, 0.71], [9.8, 0.71], [-4.7, 0.71], [1.0, 0.71]] },
+    { name: "senorbackdoor", bands: [[8.0, 0.7], [-2.0, 0.7], [-5.0, 0.7], [2.0, 0.7], [-2.0, 0.7], [8.0, 0.7], [1.0, 0.7], [11.0, 0.7]] },
   ];
 
   // =========================================================================
@@ -273,7 +269,7 @@
 
     log(
       `Battery: L=${batteryLeft}% R=${batteryRight}%` +
-        (deviceName ? ` Name: ${deviceName}` : "")
+      (deviceName ? ` Name: ${deviceName}` : "")
     );
 
     // Update UI
@@ -577,26 +573,34 @@
   // Build custom preset buttons
   (function buildCustomPresetButtons() {
     const container = document.getElementById("custom-presets");
-    CUSTOM_PRESETS.forEach((preset) => {
-      const btn = document.createElement("button");
-      btn.className = "preset-btn";
-      btn.textContent = preset.name;
-      if (preset.recommended) {
-        const badge = document.createElement("span");
-        badge.className = "badge";
-        badge.textContent = "recommended";
-        btn.appendChild(badge);
-      }
-      btn.addEventListener("click", async function () {
-        if (!connected) return;
-        document
-          .querySelectorAll(".preset-btn")
-          .forEach((b) => b.classList.remove("active"));
-        this.classList.add("active");
-        await applyCustomPreset(preset);
+
+    function addPresetButtons(presets, containerEl) {
+      presets.forEach((preset) => {
+        const btn = document.createElement("button");
+        btn.className = "preset-btn";
+        btn.textContent = preset.name;
+        if (preset.recommended) {
+          const badge = document.createElement("span");
+          badge.className = "badge";
+          badge.textContent = "recommended";
+          btn.appendChild(badge);
+        }
+        btn.addEventListener("click", async function () {
+          if (!connected) return;
+          document
+            .querySelectorAll(".preset-btn")
+            .forEach((b) => b.classList.remove("active"));
+          this.classList.add("active");
+          await applyCustomPreset(preset);
+        });
+        containerEl.appendChild(btn);
       });
-      container.appendChild(btn);
-    });
+    }
+
+    addPresetButtons(CUSTOM_PRESETS, container);
+
+    const appContainer = document.getElementById("app-presets");
+    addPresetButtons(APP_PRESETS, appContainer);
   })();
 
   // Build sliders on load
