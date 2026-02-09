@@ -1,3 +1,6 @@
+results/
+results_app/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
