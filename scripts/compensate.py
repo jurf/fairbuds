@@ -4,16 +4,27 @@ a configurable EQ. This script applies naive compensation to an EQ built on the
 Main preset for better performance on the Studio preset.
 """
 
-import sys
+import argparse
 
-if len(sys.argv) != 2:
-    print("Usage: python compensate.py <preset_name>")
-    sys.exit(1)
+parser = argparse.ArgumentParser(
+    description="Naively transform a Main preset to a Studio preset"
+)
+parser.add_argument("preset_name", help="Name of the preset file")
+parser.add_argument(
+    "--override",
+    help="Override a single gain value ('index:new_gain')",
+    action="append",
+)
+args = parser.parse_args()
 
-filename = sys.argv[1]
+filename = args.preset_name
 
 # From presets/main-ish.txt
 compensations = [-1, 1, 2, 3.5, 1, -3, 1, 1]
+
+for override in args.override or []:
+    index, new_gain = override.split(":")
+    compensations[int(index) - 1] = float(new_gain)
 
 
 with open(filename) as f:
