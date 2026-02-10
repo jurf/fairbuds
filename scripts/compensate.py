@@ -16,7 +16,7 @@ filename = sys.argv[1]
 compensations = [-1, 1, 2, 3.5, 1, -3, 1, 1]
 
 
-with open(f"../presets/{filename}") as f:
+with open(filename) as f:
     lines = f.readlines()
 
 new_lines = []
@@ -34,5 +34,5 @@ for line in lines:
         line = " ".join(parts) + "\n"
     new_lines.append(line)
 
-with open(f"../presets/{filename}", "w") as f:
+with open(filename, "w") as f:
     f.writelines(new_lines)

@@ -42,7 +42,7 @@ python -m autoeq \
 cp "../results/RTINGS (main eq, ANC Off)/RTINGS (main eq, ANC Off) ParametricEQ.txt" \
     "../presets/rtings_treble.txt"
 
-python ../scripts/compensate.py rtings_treble.txt
+python ../scripts/compensate.py ../presets/rtings_treble.txt
 
 # Under -4 dB preamp the algorithm has a dramatically different response
 # with much less emphasis in the treble.
@@ -61,4 +61,4 @@ python -m autoeq \
 cp "../results/RTINGS (main eq, ANC Off)/RTINGS (main eq, ANC Off) ParametricEQ.txt" \
     "../presets/rtings_bass.txt"
 
-python ../scripts/compensate.py rtings_bass.txt
+python ../scripts/compensate.py ../presets/rtings_bass.txt

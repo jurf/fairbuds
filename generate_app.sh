@@ -42,4 +42,4 @@ python -m autoeq \
 cp "../results_app/RTINGS (main eq, ANC Off)/RTINGS (main eq, ANC Off) ParametricEQ.txt" \
     "../presets_app/rtings.txt"
 
-python ../scripts/compensate.py rtings.txt
+python ../scripts/compensate.py ../presets_app/rtings.txt
