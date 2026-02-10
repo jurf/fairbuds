@@ -21,31 +21,49 @@ except ImportError:
     readline = None  # type: ignore
 
 
-def get_presets_dir() -> Path:
-    """Get the presets directory path."""
+def get_presets_dirs() -> tuple[Path, Path]:
+    """Get the presets directory paths (full EQ and app-compatible)."""
     # First check relative to the package
     package_dir = Path(__file__).parent.parent.parent
     presets_dir = package_dir / "presets"
+    presets_app_dir = package_dir / "presets_app"
     if presets_dir.exists():
-        return presets_dir
+        return presets_dir, presets_app_dir
     # Fall back to current directory
-    return Path.cwd()
+    return Path.cwd() / "presets", Path.cwd() / "presets_app"
 
 
-def list_presets() -> list[str]:
-    """List available preset files."""
-    presets_dir = get_presets_dir()
-    if not presets_dir.exists():
-        return []
-    return sorted([f.stem for f in presets_dir.glob("*.txt")])
+def list_presets() -> tuple[list[str], list[str]]:
+    """List available preset files from both directories.
+
+    Returns:
+        Tuple of (full EQ presets, app-compatible presets)
+    """
+    presets_dir, presets_app_dir = get_presets_dirs()
+    full = (
+        sorted([f.stem for f in presets_dir.glob("*.txt")])
+        if presets_dir.exists()
+        else []
+    )
+    app = (
+        sorted([f.stem for f in presets_app_dir.glob("*.txt")])
+        if presets_app_dir.exists()
+        else []
+    )
+    return full, app
 
 
-def resolve_preset_path(name: str) -> str:
+def resolve_preset_path(name: str, app: bool | None = None) -> str:
     """Resolve a preset name to a full path.
+
+    Args:
+        name: Preset name or path
+        app: If True, look only in presets_app/. If False, look only in
+             presets/. If None, search both (presets/ first).
 
     Checks in order:
     1. If it's an absolute path or exists as-is, use it
-    2. Look in the presets directory
+    2. Look in the designated presets directory (or both if app is None)
     3. Return original name (will fail later with helpful error)
     """
     # Add .txt if needed
@@ -60,11 +78,19 @@ def resolve_preset_path(name: str) -> str:
     if os.path.exists(name):
         return name
 
-    # Check in presets directory
-    presets_dir = get_presets_dir()
-    preset_path = presets_dir / name_with_ext
-    if preset_path.exists():
-        return str(preset_path)
+    # Check in presets directories
+    presets_dir, presets_app_dir = get_presets_dirs()
+    if app is None:
+        dirs = [presets_dir, presets_app_dir]
+    elif app:
+        dirs = [presets_app_dir]
+    else:
+        dirs = [presets_dir]
+
+    for d in dirs:
+        path = d / name_with_ext
+        if path.exists():
+            return str(path)
 
     # Return original (will fail with helpful error)
     return name_with_ext
@@ -72,8 +98,17 @@ def resolve_preset_path(name: str) -> str:
 
 def print_help() -> None:
     """Print help message."""
-    presets = list_presets()
-    presets_info = f"  Available: {', '.join(presets)}" if presets else "  (none found)"
+    full_presets, app_presets = list_presets()
+    full_info = (
+        f"  Full EQ:    {', '.join(full_presets)}"
+        if full_presets
+        else "  Full EQ:    (none found)"
+    )
+    app_info = (
+        f"  App-compat: {', '.join(app_presets)}"
+        if app_presets
+        else "  App-compat: (none found)"
+    )
     print(f"""
 Fairbuds EQ Tool - Commands:
 ═══════════════════════════════════════════════════════════════════════════════
@@ -87,9 +122,11 @@ Fairbuds EQ Tool - Commands:
   CUSTOM EQ (8 bands: 60, 100, 230, 500, 1100, 2400, 5400, 12000 Hz):
     eq <g0> <g1>...      - Set all 8 band gains at once
     gain <band> <dB>     - Set single band gain (-12 to +13.5 dB)
-    load/l <file>        - Load AutoEQ parametric EQ file (.txt optional)
+    load/l <file>        - Load full EQ preset (from presets/)
+    loada/la <file>      - Load app-compatible preset (from presets_app/)
     presets              - List available preset files
-{presets_info}
+{full_info}
+{app_info}
 
   Q-FACTOR CONTROL:
     q <band> <value>     - Set Q for single band (Q_real = value/10)
@@ -192,8 +229,14 @@ async def interactive_mode(eq: FairbudsEQ) -> None:
                 try:
                     devices = await BleakScanner.discover(timeout=5.0)
                     print(info(f"Found {len(devices)} BLE devices:"))
-                    for d in sorted(devices, key=lambda x: getattr(x, 'rssi', -100), reverse=True):
-                        rssi = f"{d.rssi:4d} dBm" if getattr(d, 'rssi', None) else "  ?? dBm"
+                    for d in sorted(
+                        devices, key=lambda x: getattr(x, "rssi", -100), reverse=True
+                    ):
+                        rssi = (
+                            f"{d.rssi:4d} dBm"
+                            if getattr(d, "rssi", None)
+                            else "  ?? dBm"
+                        )
                         name = d.name or "(unknown)"
                         marker = " ←" if d.address.upper() == eq.address.upper() else ""
                         print(f"  {d.address}  {rssi}  {name}{marker}")
@@ -341,9 +384,11 @@ async def interactive_mode(eq: FairbudsEQ) -> None:
                 else:
                     print(error("✗ Failed"))
 
-            elif cmd_name in ("load", "l") and len(cmd) >= 2:
-                filename = resolve_preset_path(cmd[1])
-                print(dim(f"Loading AutoEQ file: {filename}"))
+            elif cmd_name in ("load", "l", "loada", "la") and len(cmd) >= 2:
+                is_app = cmd_name in ("loada", "la")
+                filename = resolve_preset_path(cmd[1], app=is_app)
+                label = "app-compatible" if is_app else "full EQ"
+                print(dim(f"Loading {label} preset: {filename}"))
                 band_data = eq.parse_autoeq_file(filename)
                 if band_data:
                     eq.current_gains = [g for _, g, _ in band_data]
@@ -356,12 +401,17 @@ async def interactive_mode(eq: FairbudsEQ) -> None:
                     print(error("✗ Failed to parse file"))
 
             elif cmd_name == "presets":
-                presets = list_presets()
-                if presets:
-                    print(info(f"Available presets in {get_presets_dir()}:"))
-                    for p in presets:
+                presets_dir, presets_app_dir = get_presets_dirs()
+                full_presets, app_presets = list_presets()
+                if full_presets:
+                    print(info(f"Full EQ presets ({presets_dir}):"))
+                    for p in full_presets:
                         print(f"  {p}")
-                else:
+                if app_presets:
+                    print(info(f"App-compatible presets ({presets_app_dir}):"))
+                    for p in app_presets:
+                        print(f"  {p}")
+                if not full_presets and not app_presets:
                     print(warning("No presets found"))
 
             else:
@@ -479,8 +529,8 @@ async def scan_devices() -> None:
     try:
         devices = await BleakScanner.discover(timeout=5.0)
         print(info(f"Found {len(devices)} BLE devices:"))
-        for d in sorted(devices, key=lambda x: getattr(x, 'rssi', -100), reverse=True):
-            rssi = f"{d.rssi:4d} dBm" if getattr(d, 'rssi', None) else "  ?? dBm"
+        for d in sorted(devices, key=lambda x: getattr(x, "rssi", -100), reverse=True):
+            rssi = f"{d.rssi:4d} dBm" if getattr(d, "rssi", None) else "  ?? dBm"
             name = d.name or "(unknown)"
             print(f"  {d.address}  {rssi}  {name}")
     except Exception as e:
@@ -500,14 +550,18 @@ def main() -> None:
 
     # Handle --presets
     if args.presets:
-        presets = list_presets()
-        presets_dir = get_presets_dir()
-        if presets:
-            print(info(f"Available presets in {presets_dir}:"))
-            for p in presets:
+        presets_dir, presets_app_dir = get_presets_dirs()
+        full_presets, app_presets = list_presets()
+        if full_presets:
+            print(info(f"Full EQ presets ({presets_dir}):"))
+            for p in full_presets:
                 print(f"  {p}")
-        else:
-            print(warning(f"No presets found in {presets_dir}"))
+        if app_presets:
+            print(info(f"App-compatible presets ({presets_app_dir}):"))
+            for p in app_presets:
+                print(f"  {p}")
+        if not full_presets and not app_presets:
+            print(warning(f"No presets found in {presets_dir} or {presets_app_dir}"))
         return
 
     # Require address for normal operation
