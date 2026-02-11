@@ -4,6 +4,8 @@ Test tool for the reverse-engineered Fairbuds GATT protocol.
 
 At least subjectively, the expanded neq capabilities significantly improve the sound compared to what's possible with the app itself, especially in the high end.
 
+**Now available as a [web app](https://jurf.github.io/fairbuds/)** (thanks [@zyberspace](https://github.com/zyberspace)).
+
 ## Features
 
 - Set EQ presets (Main, Bass, Flat, Studio)
