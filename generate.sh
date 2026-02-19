@@ -1,48 +1,51 @@
 set -e
 
-python -m autoeq \
-    --input-file="../measurements/DHRME (studio eq, ANC Off).csv" \
-    --output-dir="../results" \
-    --target="targets/AutoEq in-ear.csv" \
-    --max-gain=8 \
-    --parametric-eq \
-    --parametric-eq-config=../pex/fairbuds.yaml \
-    --fs=48000 \
-    --bass-boost=8 \
-    --preamp=-2.4
-
-cp "../results/DHRME (studio eq, ANC Off)/DHRME (studio eq, ANC Off) ParametricEQ.txt" \
-    "../presets/dhrme.txt"
-
-python -m autoeq \
-    --input-file="../measurements/DHRME (studio eq, ANC On).csv" \
-    --output-dir="../results" \
-    --target="targets/AutoEq in-ear.csv" \
-    --max-gain=8 \
-    --parametric-eq \
-    --parametric-eq-config=../pex/fairbuds.yaml \
-    --fs=48000 \
-    --bass-boost=8 \
-    --preamp=-2
-
-cp "../results/DHRME (studio eq, ANC On)/DHRME (studio eq, ANC On) ParametricEQ.txt" \
-    "../presets/dhrme_anc.txt"
-
-# This one is really picky. It's possible a better EQ will be found in the future with
-# different constraints
+# rtings
 python -m autoeq \
     --input-file="../measurements/RTINGS (main eq, ANC Off).csv" \
     --output-dir="../results" \
-    --target="targets/JM-1 with Harman filters.csv" \
-    --max-gain=8 \
+    --target="targets/JM-2 with Harman treble filter.csv" \
+    --max-gain=11 \
     --parametric-eq \
     --parametric-eq-config=../pex/fairbuds.yaml \
-    --fs=48000 \
-    --bass-boost=6.5 \
-    --preamp=-4
+    --sound-signature=../signatures/reconstructed.csv \
+    --sound-signature-smoothing-window-size=-1 \
+    --fs=44099 \
+    --treble-boost=-4 \
+    --bass-boost=5.5 \
+    --preamp=0.6
 
 cp "../results/RTINGS (main eq, ANC Off)/RTINGS (main eq, ANC Off) ParametricEQ.txt" \
     "../presets/rtings.txt"
 
-# The treble boost produces some unwanted spikes, tone it down
-python ../scripts/compensate.py ../presets/rtings.txt --override 8:-1
+
+# dhrme
+python -m autoeq \
+    --input-file="../measurements/DHRME (studio eq, ANC Off).csv" \
+    --output-dir="../results" \
+    --target="targets/AutoEq in-ear.csv" \
+    --max-gain=12 \
+    --parametric-eq \
+    --parametric-eq-config=../pex/fairbuds.yaml \
+    --fs=44100 \
+    --bass-boost=8 \
+    --preamp=-3.8
+
+cp "../results/DHRME (studio eq, ANC Off)/DHRME (studio eq, ANC Off) ParametricEQ.txt" \
+    "../presets/dhrme.txt"
+
+
+# dhrme_anc
+python -m autoeq \
+    --input-file="../measurements/DHRME (studio eq, ANC On).csv" \
+    --output-dir="../results" \
+    --target="targets/AutoEq in-ear.csv" \
+    --max-gain=12 \
+    --parametric-eq \
+    --parametric-eq-config=../pex/fairbuds.yaml \
+    --fs=44100 \
+    --bass-boost=8 \
+    --preamp=-1.1
+
+cp "../results/DHRME (studio eq, ANC On)/DHRME (studio eq, ANC On) ParametricEQ.txt" \
+    "../presets/dhrme_anc.txt"
