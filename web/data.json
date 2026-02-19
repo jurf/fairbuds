@@ -1,0 +1,13 @@
+{
+    "presets": [
+        "rtings.txt",
+        "dhrme.txt",
+        "dhrme_anc.txt"
+    ],
+    "presets_app": [
+        "rtings.txt",
+        "dhrme.txt",
+        "dhrme_anc.txt",
+        "senorbackdoor.txt"
+    ]
+}
