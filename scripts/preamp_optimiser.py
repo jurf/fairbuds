@@ -22,40 +22,50 @@ MIN_PREAMP = -8
 MAX_PREAMP = 4
 STEP = 0.1
 
+# Personal preference. Perhaps my seal is worse than average as all measurements
+# show a pretty accurate bass response, but I hear a reduced bass response
+# compared to my equalised Sennheiser HD 560s.
+# Might need less with smaller tips or with foam tips?
+BASS_BOOST = 1.5
+
 CONFIGS = {
     "presets/rtings": {
         "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": "JM-1 with Harman treble filter.csv",
-        "bass_boost": 6.5,
+        # "target": "JM-1 with Harman filters.csv",
+        "bass_boost": f"{6.5 + BASS_BOOST}",  # ,105,0.8",
+        # "bass_boost": 0,
     },
     "presets/dhrme": {
         "measurement": "DHRME (studio eq, ANC Off)",
         "target": "AutoEq in-ear.csv",
-        "bass_boost": 8,
+        "bass_boost": 8 + BASS_BOOST,
     },
     "presets/dhrme_anc": {
         "measurement": "DHRME (studio eq, ANC On)",
         "target": "AutoEq in-ear.csv",
-        "bass_boost": 8,
+        "bass_boost": 8 + BASS_BOOST,
     },
     "presets_app/rtings": {
         "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": "JM-1 with Harman treble filter.csv",
-        "bass_boost": 6.5,
+        # "target": "JM-1 with Harman filters.csv",
+        "bass_boost": f"{6.5 + BASS_BOOST}",
+        # "bass_boost": 0,
         "is_app": True,
     },
     "presets_app/dhrme": {
         "measurement": "DHRME (studio eq, ANC Off)",
         "target": "AutoEq in-ear.csv",
-        "bass_boost": 8,
+        "bass_boost": 8 + BASS_BOOST,
         "is_app": True,
     },
     "presets_app/dhrme_anc": {
         "measurement": "DHRME (studio eq, ANC On)",
         "target": "AutoEq in-ear.csv",
-        "bass_boost": 8,
+        "bass_boost": 8 + BASS_BOOST,
         "is_app": True,
     },
 }
