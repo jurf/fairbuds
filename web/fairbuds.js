@@ -61,13 +61,14 @@
   /**
    * Fetch a single preset text file and return a preset object.
    */
-  async function fetchPreset(folder, filename) {
+  async function fetchPreset(folder, preset) {
+    const filename = preset.name
     const resp = await fetch(`${folder}/${filename}`);
     if (!resp.ok) throw new Error(`Failed to fetch ${folder}/${filename}`);
     const text = await resp.text();
     const bands = parsePresetText(text);
     const name = filename.replace(/\.txt$/, "");
-    return { name, bands };
+    return { name, bands, recommended: preset.recommended || false };
   }
 
   /**
@@ -80,8 +81,8 @@
       const data = await resp.json();
 
       const [custom, app] = await Promise.all([
-        Promise.all((data.presets || []).map((f) => fetchPreset("presets", f))),
-        Promise.all((data.presets_app || []).map((f) => fetchPreset("presets_app", f))),
+        Promise.all((data.presets || []).map((p) => fetchPreset("presets", p))),
+        Promise.all((data.presets_app || []).map((p) => fetchPreset("presets_app", p))),
       ]);
 
       CUSTOM_PRESETS = custom;
@@ -613,6 +614,12 @@
       const btn = document.createElement("button");
       btn.className = "preset-btn";
       btn.textContent = preset.name;
+      if (preset.recommended) {
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = "recommended";
+        btn.appendChild(badge);
+      }
       btn.addEventListener("click", async function () {
         if (!connected) return;
         document

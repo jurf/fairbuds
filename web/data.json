@@ -1,15 +1,34 @@
 {
     "presets": [
-        "soundguys.txt",
-        "rtings.txt",
-        "dhrme.txt",
-        "dhrme_anc.txt"
+        {
+            "name": "soundguys.txt",
+            "recommended": true
+        },
+        {
+            "name": "rtings.txt"
+        },
+        {
+            "name": "dhrme.txt"
+        },
+        {
+            "name": "dhrme_anc.txt"
+        }
     ],
     "presets_app": [
-        "soundguys.txt",
-        "rtings.txt",
-        "dhrme.txt",
-        "dhrme_anc.txt",
-        "senorbackdoor.txt"
+        {
+            "name": "soundguys.txt"
+        },
+        {
+            "name": "rtings.txt"
+        },
+        {
+            "name": "dhrme.txt"
+        },
+        {
+            "name": "dhrme_anc.txt"
+        },
+        {
+            "name": "senorbackdoor.txt"
+        }
     ]
 }
