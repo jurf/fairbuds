@@ -118,7 +118,7 @@ def run(
         f"--output-dir={results_dir}",
         f"--target={target_path}",
         # Tops out at around 16kHz
-        "--max-gain=12",
+        "--max-gain=16",
         "--parametric-eq",
         f"--parametric-eq-config={pex_config}",
         # The sound signature is already reconstructed, no need for smoothing
@@ -128,7 +128,7 @@ def run(
         f"--bass-boost={bass_boost}",
         # This is my personal preference, but it's not like we can save the
         # treble anyway
-        "--treble-boost=-3",
+        "--treble-boost=-2",
         f"--preamp={preamp:.2f}",
         "--thread-count=1",
         # "--standardize-input",
