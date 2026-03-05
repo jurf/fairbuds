@@ -32,7 +32,7 @@ STEP = 0.1
 # show a pretty accurate bass response, but I hear a reduced bass response
 # compared to my equalised Sennheiser HD 560s.
 # Might need less with smaller tips or with foam tips?
-BASS_BOOST = 1.5
+BASS_BOOST = 1
 
 CONFIGS = {
     "presets/rtings": {
