@@ -12,6 +12,12 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+# Add to AutoEq/autoeq/peq.py, at the end of PEQ::optimise()
+# ```python
+#         print(f'LOSS={np.min(self.history.loss)}', flush=True)`
+# ```
+PATCHED_AUTOEQ = True
+
 ROOT = Path(__file__).resolve().parent.parent
 AUTOEQ_DIR = Path(ROOT, "AutoEq")
 MEASUREMENTS_DIR = Path(ROOT, "measurements")
@@ -83,6 +89,13 @@ def calculate_parametric(df, preamp):
     return df
 
 
+def parse_loss(lines):
+    for line in lines:
+        if line.startswith("LOSS="):
+            return float(line.split("=")[1])
+    raise ValueError("LOSS not found in output:\n" + "\n".join(lines))
+
+
 def run(
     results,
     preamp=0,
@@ -120,21 +133,41 @@ def run(
     ]
     if signature:
         cmd.append(f"--sound-signature={Path(SIGNATURES_DIR, signature)}")
-    subprocess.run(
+    proc = subprocess.Popen(
         cmd,
-        check=True,
         cwd=AUTOEQ_DIR,
         env={"VIRTUAL_ENV": str(Path(AUTOEQ_DIR, ".venv"))},
-        stdout=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
     )
-    df = pd.read_csv(Path(results_dir, measurement, f"{measurement}.csv"))
-    df = calculate_parametric(df, preamp)
+    output = proc.communicate()[0].decode("utf-8")
 
-    # The Fairbuds are not really capable of producing sound above 16kHz
-    std = df[(df["frequency"] <= 16000)]["parametric_error_smoothed"].std()
-    results.append((std, preamp, df))
+    if PATCHED_AUTOEQ:
+        loss = parse_loss(output.splitlines())
+    else:
+        df = pd.read_csv(Path(results_dir, measurement, f"{measurement}.csv"))
+        df = calculate_parametric(df, preamp)
+
+        # The Fairbuds are not really capable of producing sound above 16kHz
+        loss = df[(df["frequency"] <= 16000)]["parametric_error_smoothed"].std()
+    results.append((loss, preamp))
     return results
+
+
+def extract_error(results_dir, measurement, preamp):
+    df = pd.read_csv(Path(results_dir, measurement, f"{measurement}.csv"))
+    df["parametric_error_smoothed"] = (
+        df["error_smoothed"] + df["parametric_eq"] - preamp
+    )
+    df = df[["frequency", "parametric_error_smoothed"]].rename(
+        columns={"parametric_error_smoothed": "raw"}
+    )
+    df = df.round(2)
+    df.to_csv(
+        Path(results_dir, measurement, f"{measurement} fine-tuning.csv"), index=False
+    )
+    # The Fairbuds are not really capable of producing sound above 16kHz
+    return df
 
 
 def optimise_preamp(name, config, position=0):
@@ -191,5 +224,5 @@ if __name__ == "__main__":
     print("\n" * len(CONFIGS))
     print("=== Results ===")
     for name in CONFIGS.keys():
-        preamp, std = results[name]
-        print(f"  {name}: preamp={preamp:.2f} dB, std={std:.4f}")
+        preamp, loss = results[name]
+        print(f"  {name}: preamp={preamp:.1f} dB, loss={loss:.2f}")
