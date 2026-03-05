@@ -1,10 +1,12 @@
 {
     "presets": [
+        "soundguys.txt",
         "rtings.txt",
         "dhrme.txt",
         "dhrme_anc.txt"
     ],
     "presets_app": [
+        "soundguys.txt",
         "rtings.txt",
         "dhrme.txt",
         "dhrme_anc.txt",
