@@ -24,8 +24,8 @@ MEASUREMENTS_DIR = Path(ROOT, "measurements")
 SIGNATURES_DIR = Path(ROOT, "signatures")
 PEX_DIR = Path(ROOT, "pex")
 
-MIN_PREAMP = -8
-MAX_PREAMP = 4
+MIN_PREAMP = -6
+MAX_PREAMP = 3
 STEP = 0.1
 
 # Personal preference. Perhaps my seal is worse than average as all measurements
@@ -130,6 +130,8 @@ def run(
         # treble anyway
         "--treble-boost=-3",
         f"--preamp={preamp:.2f}",
+        "--thread-count=1",
+        # "--standardize-input",
     ]
     if signature:
         cmd.append(f"--sound-signature={Path(SIGNATURES_DIR, signature)}")
@@ -177,6 +179,14 @@ def optimise_preamp(name, config, position=0):
     best_std = float("inf")
     best_preamp = None
 
+    # Final location settings
+    is_app = config.get("is_app", False)
+    results_dir = Path(ROOT, "results_app" if is_app else "results")
+    src = Path(
+        results_dir, config["measurement"], f"{config['measurement']} ParametricEQ.txt"
+    )
+    dst = Path(ROOT, name + ".txt")
+
     pbar = tqdm(
         total=int((MAX_PREAMP - current_preamp) / STEP) + 1,
         desc=name,
@@ -190,26 +200,24 @@ def optimise_preamp(name, config, position=0):
         if std < best_std:
             best_std = std
             best_preamp = current_preamp
-        pbar.set_postfix(preamp=f"{best_preamp:.1f} dB", std=f"{best_std:.2f} dB")
+            # Allow testing while we wait
+            shutil.copy(src, dst)
+        pbar.set_postfix(preamp=f"{best_preamp:.1f} dB", loss=f"{best_std:.2f}")
         pbar.update(1)
         current_preamp = round(current_preamp + STEP, 2)
     pbar.close()
 
     # Final run with optimal preamp
     results = run(results, best_preamp, **config)
-    # Copy EQ to final location
-    is_app = config.get("is_app", False)
-    results_dir = Path(ROOT, "results_app" if is_app else "results")
-    src = Path(
-        results_dir, config["measurement"], f"{config['measurement']} ParametricEQ.txt"
-    )
-    dst = Path(ROOT, name + ".txt")
-    shutil.copy(src, dst)
+
+    # Extract the error for Wavelet fine-tuning
+    extract_error(results_dir, config["measurement"], best_preamp)
+
     return name, best_preamp, best_std
 
 
 if __name__ == "__main__":
-    workers = max(1, multiprocessing.cpu_count() - 1)
+    workers = max(1, multiprocessing.cpu_count() - 3)
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(optimise_preamp, name, config, i): name
