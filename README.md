@@ -95,6 +95,7 @@ uv run fairbuds --list-presets      # List available AutoEQ presets
 - `presets_app/` – App-compatible versions of the presets
 - `measurements/` – Useful Fairbuds response curve measurements
 - `src/` – Source code for this project
+- `targets/` – Useful target curves for AutoEQ
 
 Please keep in mind that this project is a quick-and-dirty experiment and most of the Python code was vibe-coded. There is not much point in making it more robust; it served only to test the protocol before attempting Gadgetbridge support.
 
