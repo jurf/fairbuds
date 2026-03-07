@@ -22,73 +22,85 @@ ROOT = Path(__file__).resolve().parent.parent
 AUTOEQ_DIR = Path(ROOT, "AutoEq")
 MEASUREMENTS_DIR = Path(ROOT, "measurements")
 SIGNATURES_DIR = Path(ROOT, "signatures")
+TARGETS_DIR = Path(ROOT, "targets")
 PEX_DIR = Path(ROOT, "pex")
 
 MIN_PREAMP = -6
 MAX_PREAMP = 3
 STEP = 0.1
 
-# Personal preference. Perhaps my seal is worse than average as all measurements
-# show a pretty accurate bass response, but I hear a reduced bass response
-# compared to my equalised Sennheiser HD 560s.
-# Might need less with smaller tips or with foam tips?
-BASS_BOOST = 1
+# Personal preferences
+# --------------------
+# Perhaps my seal is worse than average as all measurements show a pretty
+# accurate bass response, but I hear a reduced bass response compared to my
+# equalised Sennheiser HD 560s. Might need less with smaller tips or with foam
+# tips?
+BASS_BOOST = 4
+# The headphones cannot really produce sound above 16kHz, and it's not like we
+# can save the treble anyway
+TREBLE_BOOST = -4
+
+# Measurements on the Brüel & Kjaer 5128
+# TARGET_5128 = Path(AUTOEQ_DIR, "targets", "JM-1 with Harman treble filter.csv")
+# BASS_BOOST_5128 = 6.5
+TARGET_5128 = Path(TARGETS_DIR, "SoundGuys Headphone Preference Curve.csv")
+BASS_BOOST_5128 = 0
+TREBLE_BOOST_5128 = 0
+# TARGET_5128 = Path(TARGETS_DIR, "listener JM-1.csv")
+# BASS_BOOST_5128 = 6
+# TREBLE_BOOST_5128 = 2
+
+# Measurements on the 711
+TARGET_711 = Path(AUTOEQ_DIR, "targets", "AutoEq in-ear.csv")
+BASS_BOOST_711 = 8
 
 CONFIGS = {
     "presets/rtings": {
         "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
-        "target": "JM-1 with Harman treble filter.csv",
-        # "target": "JM-1 with Harman filters.csv",
-        "bass_boost": f"{6.5 + BASS_BOOST}",  # ,105,0.8",
-        # "bass_boost": 0,
+        "target": TARGET_5128,
+        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
     },
     "presets/soundguys": {
         "measurement": "SoundGuys (main eq, ANC Off)",
         "signature": "reconstructed.csv",
-        "target": "JM-1 with Harman treble filter.csv",
-        # "target": "JM-1 with Harman filters.csv",
-        "bass_boost": f"{6.5 + BASS_BOOST}",  # ,105,0.8",
-        # "bass_boost": 0,
+        "target": TARGET_5128,
+        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
     },
     "presets/dhrme": {
         "measurement": "DHRME (studio eq, ANC Off)",
-        "target": "AutoEq in-ear.csv",
-        "bass_boost": 8 + BASS_BOOST,
+        "target": TARGET_711,
+        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
     },
     "presets/dhrme_anc": {
         "measurement": "DHRME (studio eq, ANC On)",
-        "target": "AutoEq in-ear.csv",
-        "bass_boost": 8 + BASS_BOOST,
+        "target": TARGET_711,
+        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
     },
     "presets_app/rtings": {
         "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
-        "target": "JM-1 with Harman treble filter.csv",
-        # "target": "JM-1 with Harman filters.csv",
-        "bass_boost": f"{6.5 + BASS_BOOST}",
-        # "bass_boost": 0,
+        "target": TARGET_5128,
+        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
         "is_app": True,
     },
     "presets_app/soundguys": {
         "measurement": "SoundGuys (main eq, ANC Off)",
         "signature": "reconstructed.csv",
-        "target": "JM-1 with Harman treble filter.csv",
-        # "target": "JM-1 with Harman filters.csv",
-        "bass_boost": f"{6.5 + BASS_BOOST}",  # ,105,0.8",
-        # "bass_boost": 0,
+        "target": TARGET_5128,
+        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
         "is_app": True,
     },
     "presets_app/dhrme": {
         "measurement": "DHRME (studio eq, ANC Off)",
-        "target": "AutoEq in-ear.csv",
-        "bass_boost": 8 + BASS_BOOST,
+        "target": TARGET_711,
+        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
         "is_app": True,
     },
     "presets_app/dhrme_anc": {
         "measurement": "DHRME (studio eq, ANC On)",
-        "target": "AutoEq in-ear.csv",
-        "bass_boost": 8 + BASS_BOOST,
+        "target": TARGET_711,
+        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
         "is_app": True,
     },
 }
@@ -117,15 +129,14 @@ def run(
     results,
     preamp=0,
     signature=None,
-    target="JM-1 with Harman treble filter.csv",
-    measurement="RTINGS (main eq, ANC Off)",
-    bass_boost=6.5,
+    target=None,
+    measurement=None,
+    bass_boost=0,
     is_app=False,
 ):
     results_dir = Path(ROOT, "results_app" if is_app else "results")
     pex_config = Path(PEX_DIR, f"fairbuds{'_app' if is_app else ''}.yaml")
     input_file = Path(MEASUREMENTS_DIR, f"{measurement}.csv")
-    target_path = Path(AUTOEQ_DIR, "targets", target)
 
     cmd = [
         str(Path(AUTOEQ_DIR, ".venv", "bin", "python")),
@@ -133,7 +144,7 @@ def run(
         "autoeq",
         f"--input-file={input_file}",
         f"--output-dir={results_dir}",
-        f"--target={target_path}",
+        f"--target={target}",
         # Tops out at around 16kHz
         "--max-gain=16",
         "--parametric-eq",
@@ -143,10 +154,8 @@ def run(
         # Based on Android's report in Developer Options
         "--fs=44100",
         f"--bass-boost={bass_boost}",
-        # This is my personal preference, but it's not like we can save the
-        # treble anyway
-        "--treble-boost=-2",
-        f"--preamp={preamp:.2f}",
+        f"--treble-boost={TREBLE_BOOST}",
+        f"--preamp={preamp:.1f}",
         "--thread-count=1",
         # "--standardize-input",
     ]
