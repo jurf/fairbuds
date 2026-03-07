@@ -8,7 +8,8 @@ filter_defaults:
   min_gain: -12
   max_gain: 13.5
   min_q: 0.1
-  max_q: 25.5
+  # The optimiser tends to misbehave with higher Q values than the default 6
+  # max_q: 25.5
 filters:
   - type: PEAKING
     fc: 60

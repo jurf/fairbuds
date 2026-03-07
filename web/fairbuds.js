@@ -34,25 +34,64 @@
   const RESPONSE_TIMEOUT = 5000;
 
   // =========================================================================
-  // Custom Presets (from presets/ and presets_app/ directories — AutoEQ format)
-  // Each entry: { name, bands: [[gain_db, q_real], ...] (8 bands) }
+  // Preset Loading (from presets/ and presets_app/ directories — AutoEQ format)
   // =========================================================================
 
-  // Full EQ presets (variable Q — requires custom protocol support)
-  const CUSTOM_PRESETS = [
-    { name: "rtings", recommended: true, bands: [[-2.3, 0.10], [4.6, 5.32], [6.4, 0.10], [3.6, 24.95], [-11.0, 0.10], [1.8, 17.00], [-9.1, 1.70], [11.8, 0.10]] },
-    { name: "dhrme", bands: [[-2.8, 0.17], [0.0, 7.38], [2.6, 0.17], [-8.8, 0.19], [0.1, 8.94], [8.1, 0.74], [-3.1, 1.73], [6.9, 0.63]] },
-    { name: "dhrme_anc", bands: [[4.0, 1.33], [1.9, 4.74], [2.7, 0.27], [-9.2, 0.11], [-1.6, 23.97], [13.4, 0.87], [0.6, 12.00], [7.9, 2.22]] },
-    { name: "main-ish", bands: [[-1.0, 0.71], [1.0, 0.71], [2.0, 0.71], [3.5, 0.71], [1.0, 0.71], [-3.0, 0.71], [1.0, 0.71], [1.0, 0.71]] },
-  ];
+  // Loaded at runtime from data.json + text files
+  let CUSTOM_PRESETS = [];
+  let APP_PRESETS = [];
 
-  // App-compatible presets (fixed Q = 0.71 — works with the official Fairbuds app)
-  const APP_PRESETS = [
-    { name: "rtings", bands: [[3.5, 0.71], [2.8, 0.71], [-8.0, 0.71], [4.3, 0.71], [-6.4, 0.71], [7.0, 0.71], [-7.7, 0.71], [7.6, 0.71]] },
-    { name: "dhrme", bands: [[-0.9, 0.71], [-0.9, 0.71], [-5.0, 0.71], [-1.6, 0.71], [-4.3, 0.71], [7.8, 0.71], [-2.6, 0.71], [9.5, 0.71]] },
-    { name: "dhrme_anc", bands: [[-2.5, 0.71], [0.3, 0.71], [-7.3, 0.71], [-1.4, 0.71], [-8.8, 0.71], [9.8, 0.71], [-4.7, 0.71], [1.0, 0.71]] },
-    { name: "senorbackdoor", bands: [[8.0, 0.7], [-2.0, 0.7], [-5.0, 0.7], [2.0, 0.7], [-2.0, 0.7], [8.0, 0.7], [1.0, 0.7], [11.0, 0.7]] },
-  ];
+  /**
+   * Parse an AutoEQ preset text file into an array of [gain_db, q_real] pairs.
+   * Ignores the Preamp line.
+   */
+  function parsePresetText(text) {
+    const bands = [];
+    for (const line of text.split("\n")) {
+      const m = line.match(
+        /^Filter\s+\d+:\s+ON\s+PK\s+Fc\s+[\d.]+\s+Hz\s+Gain\s+([\d.+-]+)\s+dB\s+Q\s+([\d.]+)/
+      );
+      if (m) {
+        bands.push([parseFloat(m[1]), parseFloat(m[2])]);
+      }
+    }
+    return bands;
+  }
+
+  /**
+   * Fetch a single preset text file and return a preset object.
+   */
+  async function fetchPreset(folder, preset) {
+    const filename = preset.name
+    const resp = await fetch(`${folder}/${filename}`);
+    if (!resp.ok) throw new Error(`Failed to fetch ${folder}/${filename}`);
+    const text = await resp.text();
+    const bands = parsePresetText(text);
+    const name = filename.replace(/\.txt$/, "");
+    return { name, bands, recommended: preset.recommended || false };
+  }
+
+  /**
+   * Load data.json and fetch all referenced preset files.
+   */
+  async function loadPresets() {
+    try {
+      const resp = await fetch("data.json");
+      if (!resp.ok) throw new Error("Failed to fetch data.json");
+      const data = await resp.json();
+
+      const [custom, app] = await Promise.all([
+        Promise.all((data.presets || []).map((p) => fetchPreset("presets", p))),
+        Promise.all((data.presets_app || []).map((p) => fetchPreset("presets_app", p))),
+      ]);
+
+      CUSTOM_PRESETS = custom;
+      APP_PRESETS = app;
+      log(`Loaded ${custom.length} custom + ${app.length} app presets`);
+    } catch (err) {
+      log("Error loading presets: " + err.message);
+    }
+  }
 
   // =========================================================================
   // State
@@ -569,38 +608,35 @@
     log("EQ reset to flat");
   });
 
-  // Build custom preset buttons
-  (function buildCustomPresetButtons() {
-    const container = document.getElementById("custom-presets");
-
-    function addPresetButtons(presets, containerEl) {
-      presets.forEach((preset) => {
-        const btn = document.createElement("button");
-        btn.className = "preset-btn";
-        btn.textContent = preset.name;
-        if (preset.recommended) {
-          const badge = document.createElement("span");
-          badge.className = "badge";
-          badge.textContent = "recommended";
-          btn.appendChild(badge);
-        }
-        btn.addEventListener("click", async function () {
-          if (!connected) return;
-          document
-            .querySelectorAll(".preset-btn")
-            .forEach((b) => b.classList.remove("active"));
-          this.classList.add("active");
-          await applyCustomPreset(preset);
-        });
-        containerEl.appendChild(btn);
+  function addPresetButtons(presets, containerEl) {
+    containerEl.innerHTML = "";
+    presets.forEach((preset) => {
+      const btn = document.createElement("button");
+      btn.className = "preset-btn";
+      btn.textContent = preset.name;
+      if (preset.recommended) {
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = "recommended";
+        btn.appendChild(badge);
+      }
+      btn.addEventListener("click", async function () {
+        if (!connected) return;
+        document
+          .querySelectorAll(".preset-btn")
+          .forEach((b) => b.classList.remove("active"));
+        this.classList.add("active");
+        await applyCustomPreset(preset);
       });
-    }
+      containerEl.appendChild(btn);
+    });
+  }
 
-    addPresetButtons(CUSTOM_PRESETS, container);
-
-    const appContainer = document.getElementById("app-presets");
-    addPresetButtons(APP_PRESETS, appContainer);
-  })();
+  // Load presets from data.json, then build buttons
+  loadPresets().then(() => {
+    addPresetButtons(CUSTOM_PRESETS, document.getElementById("custom-presets"));
+    addPresetButtons(APP_PRESETS, document.getElementById("app-presets"));
+  });
 
   // Build sliders on load
   buildEQSliders();

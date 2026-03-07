@@ -41,3 +41,12 @@ ignore = ["E501"]  # Line too long - handled by formatter
 
 [tool.ruff.format]
 quote-style = "double"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "seaborn>=0.13.2",
+    "tqdm>=4.67.3",
+]
