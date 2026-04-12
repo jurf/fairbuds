@@ -69,7 +69,8 @@
       }
 
       h3 {
-        margin: 12px 0;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
       }
     }
 
@@ -188,9 +189,25 @@
 
     /* Presets */
     .preset-row {
+      margin-top: 1rem;
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .preset-description {
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+
+      a {
+        color: var(--text);
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
     }
 
     .preset-btn {
@@ -462,6 +479,8 @@
     <h2>Presets <button id="reload-presets-btn" title="Reload presets">↻</button></h2>
 
     <h3>Built-in</h3>
+    <p class="preset-description">The official built-in presets available in the Fairbuds app. “Studio” solves some
+      issues of the “Main” preset, but still noticeably lacks in treble.</p>
     <div class="preset-row">
       <button class="preset-btn" data-preset="1">Main</button>
       <button class="preset-btn" data-preset="2">Bass Boost</button>
@@ -469,10 +488,23 @@
       <button class="preset-btn" data-preset="4">Studio</button>
     </div>
 
-    <h3>Custom (Full EQ)</h3>
+    <h3>Custom (using full EQ capability)</h3>
+    <p class="preset-description">A collection of presets generated with <a
+        href="https://github.com/jaakkopasanen/AutoEq/">AutoEq</a> based on frequency response curves from different
+      sources. They use <a href="https://github.com/jurf/fairbuds/blob/main/README.md#q-values">undocumented parts of
+        the protocol</a> to achieve greater accuracy.</p>
+    <p class="preset-description">Due to different anatomy, no completely-universal neutral earbud target <a
+        href="https://www.youtube.com/watch?v=EZoKPtzjdtQ">can exist</a>. These presets should serve as a good base but
+      in the end they are
+      tuned to my personal preference; see <a
+        href="https://github.com/jurf/fairbuds/blob/main/README.md#generating-autoeq-presets">this page</a> for how to
+      generate your own.</p>
     <div class="preset-row" id="custom-presets"></div>
 
-    <h3>Custom (App-compatible)</h3>
+    <h3>Custom (app-compatible)</h3>
+    <p class="preset-description">Presets using only settings exposed by the official Fairbuds app. Use these if you
+      want to play with the values, as they have a constant band width. You will not achieve as good a treble response
+      though, as the EQ stops at 12&nbsp;kHz and does not affect higher frequencies enough.</p>
     <div class="preset-row" id="app-presets"></div>
   </div>
 
