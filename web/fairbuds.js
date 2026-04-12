@@ -214,6 +214,17 @@
     log("Custom EQ applied");
   }
 
+  async function sendZeroEQ() {
+    const payload = new Uint8Array(NUM_BANDS * 3);
+    for (let i = 0; i < NUM_BANDS; i++) {
+      payload[i * 3] = i;
+      payload[i * 3 + 1] = GAIN_OFFSET;
+      payload[i * 3 + 2] = DEFAULT_Q;
+    }
+    const pkt = buildPacket(CMD_CUSTOM_EQ, TYPE_NOTIFY, payload);
+    await sendCommand(pkt);
+  }
+
   async function applyCustomPreset(preset) {
     for (let i = 0; i < NUM_BANDS; i++) {
       const [gainDb, qReal] = preset.bands[i];
@@ -224,6 +235,7 @@
       bandQs[i] = Math.max(0, Math.min(255, Math.round(qReal * 10)));
     }
     updateSlidersFromState();
+    await selectPreset(4);
     await sendCustomEQ();
     log(`Custom preset "${preset.name}" applied`);
   }
@@ -584,7 +596,16 @@
         .forEach((b) => b.classList.remove("active"));
       this.classList.add("active");
 
-      await selectPreset(presetNum);
+      if (presetNum === 4) {
+        // Studio: select preset 4, then send zeroed EQ; reset sliders to flat
+        await selectPreset(4);
+        await sendZeroEQ();
+        resetSliders();
+      } else {
+        // Main / Bass Boost / Flat: send zeroed EQ first, then select preset
+        await sendZeroEQ();
+        await selectPreset(presetNum);
+      }
     });
   });
 
@@ -599,6 +620,7 @@
       .querySelectorAll(".preset-btn")
       .forEach((b) => b.classList.remove("active"));
 
+    await selectPreset(4);
     await sendCustomEQ();
   });
 
