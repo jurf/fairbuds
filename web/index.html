@@ -59,6 +59,8 @@
       margin-bottom: 16px;
 
       h2 {
+        display: flex;
+        align-items: center;
         font-size: 1rem;
         color: var(--text-dim);
         text-transform: uppercase;
@@ -89,6 +91,22 @@
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+    }
+
+    #reload-presets-btn {
+      background: transparent;
+      color: var(--text-dim);
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: var(--radius);
+      margin-left: auto;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--text);
       }
     }
 
@@ -436,7 +454,7 @@
 
   <!-- Presets -->
   <div class="card hidden" id="presets-card">
-    <h2>Presets</h2>
+    <h2>Presets <button id="reload-presets-btn" title="Reload presets">↻</button></h2>
 
     <h3>Built-in</h3>
     <div class="preset-row">

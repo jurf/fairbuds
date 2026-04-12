@@ -655,9 +655,15 @@
   }
 
   // Load presets from data.json, then build buttons
-  loadPresets().then(() => {
+  function refreshPresetButtons() {
     addPresetButtons(CUSTOM_PRESETS, document.getElementById("custom-presets"));
     addPresetButtons(APP_PRESETS, document.getElementById("app-presets"));
+  }
+
+  loadPresets().then(refreshPresetButtons);
+
+  document.getElementById("reload-presets-btn").addEventListener("click", () => {
+    loadPresets().then(refreshPresetButtons);
   });
 
   // Build sliders on load
