@@ -415,10 +415,10 @@
       const ok = await connectToDevice(picked);
       if (!ok) {
         log(
-          "That Fairbuds entry didn't have the EQ service — please click Connect again and pick the other entry."
+          "That Fairbuds entry didn't have the EQ service — please try again, or choose the other entry."
         );
         statusEl.textContent =
-          "Wrong device — click Connect and choose the other Fairbuds entry";
+          "Could not connect — please try again, or choose the other Fairbuds entry";
         statusEl.className = "error";
         connectBtn.disabled = false;
 
