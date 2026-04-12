@@ -673,11 +673,11 @@
   // Check Web Bluetooth support
   if (!navigator.bluetooth) {
     log(
-      "Web Bluetooth is not supported in this browser. Use Chrome or Edge on a supported platform."
+      "Web Bluetooth is not supported by this browser."
     );
     document.getElementById("connect-btn").disabled = true;
-    document.getElementById("status").textContent =
-      "Web Bluetooth not supported";
+    document.getElementById("status").innerHTML =
+      "Web Bluetooth is not currently supported by your browser. See <a href='https://github.com/jurf/fairbuds/blob/main/docs/web-bluetooth.md'>this guide</a> for more information.";
     document.getElementById("status").className = "error";
   } else {
     log("Ready — click Connect to pair with your Fairbuds");
