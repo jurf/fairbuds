@@ -43,64 +43,81 @@ TREBLE_BOOST = -4
 # Measurements on the Brüel & Kjaer 5128
 # TARGET_5128 = Path(AUTOEQ_DIR, "targets", "JM-1 with Harman treble filter.csv")
 # BASS_BOOST_5128 = 6.5
-TARGET_5128 = Path(TARGETS_DIR, "SoundGuys Headphone Preference Curve.csv")
-BASS_BOOST_5128 = 0
-TREBLE_BOOST_5128 = 0
-# TARGET_5128 = Path(TARGETS_DIR, "listener JM-1.csv")
+
+# TARGET_5128 = Path(TARGETS_DIR, "SoundGuys Headphone Preference Curve.csv")
+# BASS_BOOST_5128 = 0
+# TREBLE_BOOST_5128 = 0
+
+# TARGET_5128 = Path(TARGETS_DIR, "listener JM-1 DF.tsv")
 # BASS_BOOST_5128 = 6
 # TREBLE_BOOST_5128 = 2
 
+TARGET_5128 = Path(
+    TARGETS_DIR, "jurf JM-1 DF (Tilt_ -0.9dB_Oct, B_ 10dB, 3kHz_ -1.5dB).tsv"
+)
+BASS_BOOST_5128 = 0
+TREBLE_BOOST_5128 = 0
+
 # Measurements on the 711
 TARGET_711 = Path(AUTOEQ_DIR, "targets", "AutoEq in-ear.csv")
-BASS_BOOST_711 = 8
+BASS_BOOST_711 = 8 + BASS_BOOST
+TREBLE_BOOST_711 = TREBLE_BOOST
 
 CONFIGS = {
     "presets/rtings": {
         "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
-        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_5128,
+        "treble_boost": TREBLE_BOOST_5128,
     },
     "presets/soundguys": {
         "measurement": "SoundGuys (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
-        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_5128,
+        "treble_boost": TREBLE_BOOST_5128,
     },
     "presets/dhrme": {
         "measurement": "DHRME (studio eq, ANC Off)",
         "target": TARGET_711,
-        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_711,
+        "treble_boost": TREBLE_BOOST_711,
     },
     "presets/dhrme_anc": {
         "measurement": "DHRME (studio eq, ANC On)",
         "target": TARGET_711,
-        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_711,
+        "treble_boost": TREBLE_BOOST_711,
     },
     "presets_app/rtings": {
         "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
-        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_5128,
+        "treble_boost": TREBLE_BOOST_5128,
         "is_app": True,
     },
     "presets_app/soundguys": {
         "measurement": "SoundGuys (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
-        "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_5128,
+        "treble_boost": TREBLE_BOOST_5128,
         "is_app": True,
     },
     "presets_app/dhrme": {
         "measurement": "DHRME (studio eq, ANC Off)",
         "target": TARGET_711,
-        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_711,
+        "treble_boost": TREBLE_BOOST_711,
         "is_app": True,
     },
     "presets_app/dhrme_anc": {
         "measurement": "DHRME (studio eq, ANC On)",
         "target": TARGET_711,
-        "bass_boost": BASS_BOOST_711 + BASS_BOOST,
+        "bass_boost": BASS_BOOST_711,
+        "treble_boost": TREBLE_BOOST_711,
         "is_app": True,
     },
 }
@@ -132,6 +149,7 @@ def run(
     target=None,
     measurement=None,
     bass_boost=0,
+    treble_boost=0,
     is_app=False,
 ):
     results_dir = Path(ROOT, "results_app" if is_app else "results")
@@ -154,7 +172,7 @@ def run(
         # Based on Android's report in Developer Options
         "--fs=44100",
         f"--bass-boost={bass_boost}",
-        f"--treble-boost={TREBLE_BOOST}",
+        f"--treble-boost={treble_boost}",
         f"--preamp={preamp:.1f}",
         "--thread-count=1",
         # "--standardize-input",
