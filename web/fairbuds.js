@@ -189,6 +189,7 @@
 
   async function requestDeviceInfo() {
     const pkt = buildPacket(CMD_DEVICE_INFO, TYPE_REQUEST, null);
+    log("Requesting device info");
     await sendCommand(pkt);
   }
 
@@ -198,8 +199,8 @@
       TYPE_REQUEST,
       new Uint8Array([presetNum])
     );
+    log(`Selecting preset ${presetNum}`);
     await sendCommand(pkt);
-    log(`Preset ${presetNum} selected`);
   }
 
   async function sendCustomEQ() {
@@ -210,8 +211,8 @@
       payload[i * 3 + 2] = bandQs[i];
     }
     const pkt = buildPacket(CMD_CUSTOM_EQ, TYPE_NOTIFY, payload);
+    log("Sending custom EQ");
     await sendCommand(pkt);
-    log("Custom EQ applied");
   }
 
   async function sendZeroEQ() {
@@ -222,6 +223,7 @@
       payload[i * 3 + 2] = DEFAULT_Q;
     }
     const pkt = buildPacket(CMD_CUSTOM_EQ, TYPE_NOTIFY, payload);
+    log("Resetting custom EQ to zero");
     await sendCommand(pkt);
   }
 
@@ -235,9 +237,9 @@
       bandQs[i] = Math.max(0, Math.min(255, Math.round(qReal * 10)));
     }
     updateSlidersFromState();
+    log(`Applying custom EQ "${preset.name}"`);
     await selectPreset(4);
     await sendCustomEQ();
-    log(`Custom preset "${preset.name}" applied`);
   }
 
   function updateSlidersFromState() {
@@ -279,7 +281,7 @@
     } else if (cmd === CMD_SELECT_EQ) {
       log("Preset change confirmed");
     } else if (cmd === CMD_CUSTOM_EQ) {
-      log("Custom EQ confirmed");
+      log("Custom EQ change confirmed");
     } else {
       log(`Unknown command: 0x${cmd.toString(16)}`);
     }
