@@ -684,4 +684,14 @@
   } else {
     log("Ready — click Connect to pair with your Fairbuds");
   }
+
+  // Info toggles
+  document.querySelectorAll(".info-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const content = document.getElementById(btn.getAttribute("aria-controls"));
+      const open = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!open));
+      content.classList.toggle("hidden", open);
+    });
+  });
 })();
