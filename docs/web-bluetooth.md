@@ -6,7 +6,7 @@ See current browser support on [MDN](https://developer.mozilla.org/en-US/docs/We
 
 ## Linux
 
-Chromium-based browsers do not currently have bluetooth support enable by default on Linux. To manually enable it, paste `chrome://flags/#enable-web-bluetooth` into your address bar and enable the flag.
+Chromium-based browsers do not currently have Bluetooth support enabled by default on Linux. To manually enable it, paste `chrome://flags/#enable-web-bluetooth` into your address bar and enable the flag.
 
 ## Android
 
