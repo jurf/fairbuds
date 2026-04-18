@@ -14,7 +14,7 @@
       --accent-dim: #a83249;
       --text: #eee;
       --text-dim: #999;
-      --green: #4ecca3;
+      --green: #93c5fd;
       --yellow: #f0c040;
       --red: #e94560;
       --radius: 8px;
@@ -258,10 +258,26 @@
     }
 
     /* EQ */
+    .eq-scroll-wrap {
+      overflow-x: auto;
+      overflow-y: visible;
+      /* let it extend to card edges so scroll indicator reaches the edge */
+      margin: 0 -4px;
+      padding: 0 4px;
+    }
+
+    .eq-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      /* wide enough to scroll on small screens; auto-shrinks on large ones */
+      min-width: max-content;
+      width: 100%;
+    }
+
     .eq-container {
       display: flex;
-      gap: 6px;
-      justify-content: space-between;
+      gap: 2px;
       align-items: flex-end;
       height: 280px;
       padding-top: 20px;
@@ -272,6 +288,7 @@
       flex-direction: column;
       align-items: center;
       flex: 1;
+      min-width: 40px;
       height: 100%;
 
       .db-val {
@@ -292,31 +309,45 @@
       }
 
       input[type="range"] {
-        writing-mode: vertical-lr;
-        direction: rtl;
-        appearance: none;
+        display: none;
+      }
+
+      .custom-slider {
+        position: relative;
         width: 6px;
         height: 100%;
         background: var(--surface2);
         border-radius: 3px;
+        cursor: ns-resize;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
         outline: none;
-        accent-color: var(--accent);
-        cursor: pointer;
 
-        &::-webkit-slider-thumb {
-          appearance: none;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: var(--accent);
-          cursor: pointer;
-          border: none;
+        &:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
+      }
 
-        &::-webkit-slider-runnable-track {
-          background: var(--surface2);
-          border-radius: 3px;
-        }
+      .custom-slider-thumb {
+        position: absolute;
+        left: 50%;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--accent);
+        transform: translateX(-50%) translateY(50%);
+        pointer-events: none;
+      }
+
+      .custom-slider-fill {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        background: var(--accent);
+        border-radius: 3px;
+        pointer-events: none;
       }
 
       .freq-label {
@@ -457,11 +488,35 @@
       }
     }
 
-    @media (max-width: 500px) {
-      .eq-container {
-        gap: 2px;
-      }
+    /* Q Knobs */
+    .q-row {
+      display: flex;
+      gap: 2px;
+    }
 
+    .q-col {
+      flex: 1;
+      min-width: 48px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .q-knob {
+      cursor: ns-resize;
+      touch-action: none;
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: block;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .q-knob text {
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+
+    @media (max-width: 500px) {
       .eq-band .freq-label {
         font-size: 0.6rem;
       }
@@ -570,8 +625,12 @@
   <!-- Custom EQ -->
   <div class="card hidden" id="eq-card">
     <h2>Custom EQ</h2>
-    <p class="preset-description">Note: Q-values are not yet customisable from the UI.</p>
-    <div class="eq-container" id="eq-sliders"></div>
+    <div class="eq-scroll-wrap">
+      <div class="eq-inner">
+        <div class="eq-container" id="eq-sliders"></div>
+        <div class="q-row" id="q-row"></div>
+      </div>
+    </div>
     <div class="eq-actions">
       <button id="eq-apply">Apply EQ</button>
       <button id="eq-reset">Reset Flat</button>

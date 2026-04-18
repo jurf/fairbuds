@@ -244,13 +244,8 @@
 
   function updateSlidersFromState() {
     for (let i = 0; i < NUM_BANDS; i++) {
-      const slider = document.getElementById(`eq-slider-${i}`);
-      if (slider) slider.value = bandGains[i];
-      const dbEl = document.getElementById(`db-val-${i}`);
-      if (dbEl) {
-        const db = decodeGain(bandGains[i]);
-        dbEl.textContent = db >= 0 ? `+${db.toFixed(1)}` : db.toFixed(1);
-      }
+      setSliderValue(i, bandGains[i]);
+      setKnobValue(i, bandQs[i] / 10);
     }
   }
 
@@ -510,14 +505,209 @@
     });
     document.getElementById("eq-apply").disabled = !enabled;
     document.getElementById("eq-reset").disabled = !enabled;
-    document.querySelectorAll("#eq-sliders input").forEach((inp) => {
-      inp.disabled = !enabled;
+    document.querySelectorAll(".custom-slider").forEach((el) => {
+      el.style.opacity = enabled ? "" : "0.4";
+      el.style.pointerEvents = enabled ? "" : "none";
     });
+    document.querySelectorAll(".q-knob").forEach((svg) => {
+      svg.style.opacity = enabled ? "" : "0.4";
+      svg.style.pointerEvents = enabled ? "" : "none";
+    });
+  }
+
+  // =========================================================================
+  // Q Knob Helpers
+  // =========================================================================
+
+  const Q_MIN = 0.1;
+  const Q_MAX = 25.5;
+  const Q_CENTER = 0.7; // knob midpoint — equal log resolution on either side
+  const KNOB_START_DEG = 225; // clockwise from 12 o'clock (~7 o'clock position)
+  const KNOB_SWEEP_DEG = 270; // total arc sweep
+
+  function degToPoint(cx, cy, r, clockDeg) {
+    const rad = (clockDeg - 90) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function describeArc(cx, cy, r, startDeg, spanDeg) {
+    if (spanDeg <= 0) return "";
+    const endDeg = startDeg + spanDeg;
+    const s = degToPoint(cx, cy, r, startDeg);
+    const e = degToPoint(cx, cy, r, endDeg);
+    const large = spanDeg > 180 ? 1 : 0;
+    return (
+      `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} ` +
+      `A ${r} ${r} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`
+    );
+  }
+
+  // Two-segment log scale: Q_MIN→Q_CENTER occupies the lower half of the knob,
+  // Q_CENTER→Q_MAX occupies the upper half, so 0.7 sits exactly at the midpoint.
+  function qToT(q) {
+    if (q <= Q_CENTER) {
+      return 0.5 * Math.log(q / Q_MIN) / Math.log(Q_CENTER / Q_MIN);
+    }
+    return 0.5 + 0.5 * Math.log(q / Q_CENTER) / Math.log(Q_MAX / Q_CENTER);
+  }
+
+  function tToQ(t) {
+    t = Math.max(0, Math.min(1, t));
+    if (t <= 0.5) {
+      return Q_MIN * Math.pow(Q_CENTER / Q_MIN, 2 * t);
+    }
+    return Q_CENTER * Math.pow(Q_MAX / Q_CENTER, 2 * (t - 0.5));
+  }
+
+  function setKnobValue(i, val) {
+    val = Math.round(Math.max(Q_MIN, Math.min(Q_MAX, val)) * 10) / 10;
+    bandQs[i] = Math.max(1, Math.round(val * 10)); // 0 must never be written; protocol precision is 0.1
+
+    const t = qToT(val);
+    const cx = 20, cy = 20, r = 14;
+
+    const fillEl = document.getElementById(`knob-fill-${i}`);
+    if (fillEl) {
+      fillEl.setAttribute("d", val <= Q_MIN ? "" : describeArc(cx, cy, r, KNOB_START_DEG, t * KNOB_SWEEP_DEG));
+    }
+
+    const dotEl = document.getElementById(`knob-dot-${i}`);
+    if (dotEl) {
+      const pt = degToPoint(cx, cy, r, KNOB_START_DEG + t * KNOB_SWEEP_DEG);
+      dotEl.setAttribute("cx", pt.x.toFixed(2));
+      dotEl.setAttribute("cy", pt.y.toFixed(2));
+    }
+
+    const svgEl = document.getElementById(`knob-svg-${i}`);
+    if (svgEl) svgEl.setAttribute("aria-valuenow", val.toFixed(1));
+
+    const textEl = document.getElementById(`knob-text-${i}`);
+    if (textEl) textEl.textContent = val.toFixed(1);
+  }
+
+  function createKnob(i) {
+    const col = document.createElement("div");
+    col.className = "q-col";
+
+    const cx = 20, cy = 20, r = 14;
+    const ns = "http://www.w3.org/2000/svg";
+
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 40 40");
+    svg.classList.add("q-knob");
+    svg.id = `knob-svg-${i}`;
+    svg.setAttribute("role", "slider");
+    svg.setAttribute("aria-label", `Q for ${formatFreq(FREQUENCIES[i])} Hz`);
+    svg.setAttribute("aria-valuemin", Q_MIN);
+    svg.setAttribute("aria-valuemax", Q_MAX);
+    svg.setAttribute("aria-valuenow", (DEFAULT_Q / 10).toFixed(1));
+    svg.setAttribute("tabindex", "0");
+
+    // Background track — full sweep, dimmed
+    const track = document.createElementNS(ns, "path");
+    track.setAttribute("d", describeArc(cx, cy, r, KNOB_START_DEG, KNOB_SWEEP_DEG));
+    track.setAttribute("fill", "none");
+    track.setAttribute("stroke", "var(--surface2)");
+    track.setAttribute("stroke-width", "3");
+    track.setAttribute("stroke-linecap", "round");
+
+    // Value arc — accent-colored, from start to current value
+    const fill = document.createElementNS(ns, "path");
+    fill.setAttribute("id", `knob-fill-${i}`);
+    fill.setAttribute("fill", "none");
+    fill.setAttribute("stroke", "var(--accent)");
+    fill.setAttribute("stroke-width", "3");
+    fill.setAttribute("stroke-linecap", "round");
+
+    // Indicator dot at the current value position on the arc
+    const dot = document.createElementNS(ns, "circle");
+    dot.setAttribute("id", `knob-dot-${i}`);
+    dot.setAttribute("r", "3");
+    dot.setAttribute("fill", "var(--accent)");
+
+    svg.appendChild(track);
+    svg.appendChild(fill);
+
+    // Value text centred in the knob — styled like db-val
+    const qText = document.createElementNS(ns, "text");
+    qText.setAttribute("id", `knob-text-${i}`);
+    qText.setAttribute("x", cx);
+    qText.setAttribute("y", cy);
+    qText.setAttribute("text-anchor", "middle");
+    qText.setAttribute("dominant-baseline", "central");
+    qText.setAttribute("fill", "var(--green)");
+    qText.setAttribute("font-size", "8");
+    qText.setAttribute("font-weight", "600");
+    qText.setAttribute("pointer-events", "none");
+    qText.textContent = (DEFAULT_Q / 10).toFixed(1);
+
+    svg.appendChild(qText);
+    svg.appendChild(dot);
+
+    // Vertical drag: 200 px = full t range (two-segment log Q scale)
+    let dragStartY = 0;
+    let dragStartT = 0;
+
+    svg.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      svg.setPointerCapture(e.pointerId);
+      dragStartY = e.clientY;
+      dragStartT = qToT(bandQs[i] / 10);
+    });
+
+    svg.addEventListener("pointermove", (e) => {
+      if (!svg.hasPointerCapture(e.pointerId)) return;
+      const deltaT = (dragStartY - e.clientY) / 200;
+      setKnobValue(i, tToQ(dragStartT + deltaT));
+    });
+
+    // Scroll wheel: ±0.1 per notch
+    svg.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      setKnobValue(i, bandQs[i] / 10 + (e.deltaY < 0 ? 0.1 : -0.1));
+    }, { passive: false });
+
+    // Keyboard: arrow keys step by 0.1
+    svg.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+        e.preventDefault();
+        setKnobValue(i, bandQs[i] / 10 + 0.1);
+      } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        setKnobValue(i, bandQs[i] / 10 - 0.1);
+      }
+    });
+
+    col.appendChild(svg);
+    return col;
   }
 
   // =========================================================================
   // EQ Slider UI
   // =========================================================================
+
+  function setSliderValue(i, encodedVal) {
+    encodedVal = Math.max(0, Math.min(255, Math.round(encodedVal)));
+    bandGains[i] = encodedVal;
+
+    const pct = (encodedVal / 255) * 100;
+    const zeroPct = (GAIN_OFFSET / 255) * 100;
+    const thumbEl = document.getElementById(`eq-thumb-${i}`);
+    if (thumbEl) thumbEl.style.bottom = pct + "%";
+
+    const fillEl = document.getElementById(`eq-fill-${i}`);
+    if (fillEl) {
+      fillEl.style.bottom = Math.min(pct, zeroPct) + "%";
+      fillEl.style.height = Math.abs(pct - zeroPct) + "%";
+    }
+
+    const sliderEl = document.getElementById(`eq-slider-${i}`);
+    if (sliderEl) sliderEl.setAttribute("aria-valuenow", encodedVal);
+
+    const db = decodeGain(encodedVal);
+    const dbEl = document.getElementById(`db-val-${i}`);
+    if (dbEl) dbEl.textContent = db >= 0 ? `+${db.toFixed(1)}` : db.toFixed(1);
+  }
 
   function buildEQSliders() {
     const container = document.getElementById("eq-sliders");
@@ -535,42 +725,83 @@
       const sliderWrap = document.createElement("div");
       sliderWrap.className = "slider-wrap";
 
-      const slider = document.createElement("input");
-      slider.type = "range";
-      slider.min = 0;
-      slider.max = 255;
-      slider.value = GAIN_OFFSET; // 0 dB
-      slider.id = `eq-slider-${i}`;
-      slider.dataset.band = i;
+      const customSlider = document.createElement("div");
+      customSlider.className = "custom-slider";
+      customSlider.id = `eq-slider-${i}`;
+      customSlider.setAttribute("role", "slider");
+      customSlider.setAttribute("aria-label", `Gain for ${formatFreq(FREQUENCIES[i])} Hz`);
+      customSlider.setAttribute("aria-valuemin", 0);
+      customSlider.setAttribute("aria-valuemax", 255);
+      customSlider.setAttribute("aria-valuenow", GAIN_OFFSET);
+      customSlider.setAttribute("tabindex", "0");
 
-      slider.addEventListener("input", function () {
-        const idx = parseInt(this.dataset.band);
-        bandGains[idx] = parseInt(this.value);
-        const db = decodeGain(bandGains[idx]);
-        document.getElementById(`db-val-${idx}`).textContent =
-          db >= 0 ? `+${db.toFixed(1)}` : db.toFixed(1);
+      const fill = document.createElement("div");
+      fill.className = "custom-slider-fill";
+      fill.id = `eq-fill-${i}`;
+      fill.style.bottom = ((GAIN_OFFSET / 255) * 100) + "%";
+      fill.style.height = "0%";
+      customSlider.appendChild(fill);
+
+      const thumb = document.createElement("div");
+      thumb.className = "custom-slider-thumb";
+      thumb.id = `eq-thumb-${i}`;
+      thumb.style.bottom = ((GAIN_OFFSET / 255) * 100) + "%";
+      customSlider.appendChild(thumb);
+
+      let sliderRect = null;
+      customSlider.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        customSlider.setPointerCapture(e.pointerId);
+        sliderRect = customSlider.getBoundingClientRect();
+        const t = 1 - (e.clientY - sliderRect.top) / sliderRect.height;
+        setSliderValue(i, Math.round(t * 255));
+      });
+
+      customSlider.addEventListener("pointermove", (e) => {
+        if (!customSlider.hasPointerCapture(e.pointerId)) return;
+        const t = 1 - (e.clientY - sliderRect.top) / sliderRect.height;
+        setSliderValue(i, Math.round(t * 255));
+      });
+
+      customSlider.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        setSliderValue(i, bandGains[i] + (e.deltaY < 0 ? 1 : -1));
+      }, { passive: false });
+
+      customSlider.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+          e.preventDefault();
+          setSliderValue(i, bandGains[i] + 1);
+        } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          setSliderValue(i, bandGains[i] - 1);
+        }
       });
 
       const freqLabel = document.createElement("div");
       freqLabel.className = "freq-label";
       freqLabel.textContent = formatFreq(FREQUENCIES[i]);
 
-      sliderWrap.appendChild(slider);
+      sliderWrap.appendChild(customSlider);
       band.appendChild(dbVal);
       band.appendChild(sliderWrap);
       band.appendChild(freqLabel);
       container.appendChild(band);
     }
+
+    const qRow = document.getElementById("q-row");
+    qRow.innerHTML = "";
+    for (let i = 0; i < NUM_BANDS; i++) {
+      qRow.appendChild(createKnob(i));
+      setKnobValue(i, DEFAULT_Q / 10);
+    }
   }
 
   function resetSliders() {
     for (let i = 0; i < NUM_BANDS; i++) {
-      bandGains[i] = GAIN_OFFSET;
       bandQs[i] = DEFAULT_Q;
-      const slider = document.getElementById(`eq-slider-${i}`);
-      if (slider) slider.value = GAIN_OFFSET;
-      const dbEl = document.getElementById(`db-val-${i}`);
-      if (dbEl) dbEl.textContent = "0.0";
+      setSliderValue(i, GAIN_OFFSET);
+      setKnobValue(i, DEFAULT_Q / 10);
     }
   }
 
