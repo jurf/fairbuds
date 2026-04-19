@@ -70,11 +70,27 @@ h1 {
     h2 {
         display: flex;
         align-items: center;
+        gap: 8px;
         font-size: 1.125rem;
         font-weight: 700;
         color: var(--brand);
         letter-spacing: -0.01em;
         margin-bottom: 14px;
+
+        .btn-round {
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+
+            &[aria-expanded="true"] {
+                background: var(--brand);
+                color: var(--bg);
+
+                &:hover:not(:disabled) {
+                    filter: brightness(1.2);
+                }
+            }
+        }
     }
 
     h3 {
@@ -414,6 +430,39 @@ h1 {
     &:hover:not(:disabled) {
         filter: brightness(1.2);
     }
+}
+
+/* Preset Text card */
+#preset-text-card textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 160px;
+    resize: vertical;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    padding: 10px;
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
+    outline: none;
+
+    &:focus {
+        border-color: var(--brand);
+    }
+}
+
+.preset-text-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+}
+
+#preset-text-clear {
+    margin-left: auto;
 }
 
 /* Log */

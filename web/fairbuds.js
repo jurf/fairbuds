@@ -37,13 +37,13 @@
   // Preset Loading (from presets/ and presets_app/ directories — AutoEQ format)
   // =========================================================================
 
-  // Loaded at runtime from data.json + text files
+  // Loaded at runtime from data.json
   let CUSTOM_PRESETS = [];
   let APP_PRESETS = [];
 
   /**
-   * Parse an AutoEQ preset text file into an array of [gain_db, q_real] pairs.
-   * Ignores the Preamp line.
+   * Parse an AutoEQ preset text into an array of [gain_db, q_real] pairs.
+   * Ignores the Preamp line. Also used for the Preset Text paste card.
    */
   function parsePresetText(text) {
     const bands = [];
@@ -59,20 +59,25 @@
   }
 
   /**
-   * Fetch a single preset text file and return a preset object.
+   * Build a preset object from a data.json entry.
+   * Returns null if the entry has no parseable text.
    */
-  async function fetchPreset(folder, preset) {
-    const filename = preset.name
-    const resp = await fetch(`${folder}/${filename}`);
-    if (!resp.ok) throw new Error(`Failed to fetch ${folder}/${filename}`);
-    const text = await resp.text();
-    const bands = parsePresetText(text);
-    const name = filename.replace(/\.txt$/, "");
-    return { name, bands, recommended: preset.recommended || false };
+  function buildPreset(entry) {
+    if (!entry.text) return null;
+    const bands = parsePresetText(entry.text);
+    if (!bands.length) return null;
+    return {
+      name: entry.name.replace(/\.txt$/, ""),
+      bands,
+      text: entry.text,
+      target: entry.target || null,
+      preamp: entry.preamp ?? 0,
+      recommended: entry.recommended || false,
+    };
   }
 
   /**
-   * Load data.json and fetch all referenced preset files.
+   * Load data.json and build all preset objects from inlined text.
    */
   async function loadPresets() {
     try {
@@ -80,14 +85,9 @@
       if (!resp.ok) throw new Error("Failed to fetch data.json");
       const data = await resp.json();
 
-      const [custom, app] = await Promise.all([
-        Promise.all((data.presets || []).map((p) => fetchPreset("presets", p))),
-        Promise.all((data.presets_app || []).map((p) => fetchPreset("presets_app", p))),
-      ]);
-
-      CUSTOM_PRESETS = custom;
-      APP_PRESETS = app;
-      log(`Loaded ${custom.length} custom + ${app.length} app presets`);
+      CUSTOM_PRESETS = (data.presets || []).map(buildPreset).filter(Boolean);
+      APP_PRESETS = (data.presets_app || []).map(buildPreset).filter(Boolean);
+      log(`Loaded ${CUSTOM_PRESETS.length} custom + ${APP_PRESETS.length} app presets`);
     } catch (err) {
       log("Error loading presets: " + err.message);
     }
@@ -237,6 +237,11 @@
       bandQs[i] = Math.max(0, Math.min(255, Math.round(qReal * 10)));
     }
     updateSlidersFromState();
+    currentPresetTarget = preset.target || null;
+    currentPresetPreamp = preset.preamp ?? 0;
+    const textarea = document.getElementById("preset-text-area");
+    if (textarea) textarea.value = preset.text || "";
+    scheduleRedraw();
     log(`Applying custom EQ "${preset.name}"`);
     await selectPreset(4);
     await sendCustomEQ();
@@ -705,7 +710,7 @@
 
     const db = decodeGain(encodedVal);
     const dbEl = document.getElementById(`db-val-${i}`);
-    if (dbEl) dbEl.textContent = db >= 0 ? `+${db.toFixed(1)}` : `\u2212${Math.abs(db).toFixed(1)}`;
+    if (dbEl) dbEl.textContent = (db >= 0 ? '+' : '') + db.toFixed(1).replace('-', '−');
     scheduleRedraw();
   }
 
@@ -816,6 +821,12 @@
   const VIZ_FREQ_MAX = 20000;
   const VIZ_CURVE_POINTS = 512;
 
+  // Flat 512-element array of dB values for the active preset's ideal target,
+  // aligned 1:1 with the freqs array built in drawEQ. null when no preset active.
+  let currentPresetTarget = null;
+  // Optimisation preamp for the active preset (dB) — shifts the target curve.
+  let currentPresetPreamp = 0;
+
   let vizCanvas = null;
   let vizDirty = false;
   let vizHoverX = null;
@@ -898,22 +909,35 @@
     const padLeft = 34;
     const padRight = 28;
     const padTop = 12;
-    const padBottom = 22;
+    const padBottom = (currentPresetTarget && currentPresetTarget.length === VIZ_CURVE_POINTS) ? 38 : 22;
     const plotW = w - padLeft - padRight;
     const plotH = h - padTop - padBottom;
     if (plotW <= 0 || plotH <= 0) return;
+
+    // Dynamic Y-axis range — expand to fit the target curve if present
+    let dbMin = VIZ_DB_MIN;
+    let dbMax = VIZ_DB_MAX;
+    if (currentPresetTarget && currentPresetTarget.length === VIZ_CURVE_POINTS) {
+      const tMin = Math.min(...currentPresetTarget) + currentPresetPreamp;
+      const tMax = Math.max(...currentPresetTarget) + currentPresetPreamp;
+      dbMin = Math.min(dbMin, Math.floor(tMin) - 1);
+      dbMax = Math.max(dbMax, Math.ceil(tMax) + 1);
+    }
 
     function freqToX(f) {
       return padLeft + (Math.log10(f / VIZ_FREQ_MIN) / Math.log10(VIZ_FREQ_MAX / VIZ_FREQ_MIN)) * plotW;
     }
     function dbToY(db) {
-      return padTop + (1 - (db - VIZ_DB_MIN) / (VIZ_DB_MAX - VIZ_DB_MIN)) * plotH;
+      return padTop + (1 - (db - dbMin) / (dbMax - dbMin)) * plotH;
     }
 
     const zeroY = dbToY(0);
 
     // Horizontal dB grid lines
-    for (const db of [-12, -9, -6, -3, 0, 3, 6, 9, 12]) {
+    const gridStep = 3;
+    const gridDBs = [];
+    for (let db = Math.ceil(dbMin / gridStep) * gridStep; db <= dbMax; db += gridStep) gridDBs.push(db);
+    for (const db of gridDBs) {
       const y = dbToY(db);
       ctx.save();
       if (db === 0) {
@@ -1008,15 +1032,32 @@
     }
     ctx.restore();
 
+    // Ideal target curve (dashed) — shown when a preset with target data is active
+    if (currentPresetTarget && currentPresetTarget.length === VIZ_CURVE_POINTS) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(xs[0], dbToY(currentPresetTarget[0] + currentPresetPreamp));
+      for (let i = 1; i < xs.length; i++) ctx.lineTo(xs[i], dbToY(currentPresetTarget[i] + currentPresetPreamp));
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = colorText;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // dB axis labels + title
+    const labelStep = 6;
+    const labelDBs = [];
+    for (let db = Math.ceil(dbMin / labelStep) * labelStep; db <= dbMax; db += labelStep) labelDBs.push(db);
     ctx.save();
     ctx.font = '10px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'right';
     ctx.fillStyle = colorText;
     ctx.globalAlpha = 0.5;
     ctx.textBaseline = 'middle';
-    for (const db of [12, 6, 0, -6, -12]) {
-      ctx.fillText((db > 0 ? '+' : '') + db, padLeft - 4, dbToY(db));
+    for (const db of labelDBs) {
+      ctx.fillText(String(db).replace('-', '−'), padLeft - 4, dbToY(db));
     }
     ctx.textBaseline = 'bottom';
     ctx.fillText('dB', padLeft - 4, padTop - 2);
@@ -1038,6 +1079,49 @@
     ctx.fillText('Hz', w - 4, padTop + plotH + 4);
     ctx.restore();
 
+    // Canvas legend — shown below the frequency axis when target is active
+    if (currentPresetTarget && currentPresetTarget.length === VIZ_CURVE_POINTS) {
+      const ly = padTop + plotH + 28;
+      ctx.save();
+      ctx.font = '10px system-ui, -apple-system, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      const sw = 16; // swatch line width
+      const sg = 5;  // gap between swatch and label
+      const si = 18; // gap between items
+      const label1 = 'EQ curve';
+      const label2 = 'Target curve';
+      const tw1 = sw + sg + ctx.measureText(label1).width;
+      const tw2 = sw + sg + ctx.measureText(label2).width;
+      const lx = padLeft + (plotW - tw1 - si - tw2) / 2;
+      // Item 1 — solid accent line
+      ctx.strokeStyle = colorAccent;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.lineTo(lx + sw, ly);
+      ctx.stroke();
+      ctx.fillStyle = colorText;
+      ctx.globalAlpha = 0.6;
+      ctx.fillText(label1, lx + sw + sg, ly);
+      // Item 2 — dashed target line
+      const lx2 = lx + tw1 + si;
+      ctx.strokeStyle = colorText;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.45;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(lx2, ly);
+      ctx.lineTo(lx2 + sw, ly);
+      ctx.stroke();
+      ctx.globalAlpha = 0.6;
+      ctx.setLineDash([]);
+      ctx.fillText(label2, lx2 + sw + sg, ly);
+      ctx.restore();
+    }
+
     // Hover crosshair + tooltip
     if (vizHoverX !== null) {
       const cx = Math.max(padLeft, Math.min(padLeft + plotW, vizHoverX));
@@ -1048,6 +1132,13 @@
         hoverDb += peakingMagnitudeDb(hoverFreq, FREQUENCIES[i], decodeGain(bandGains[i]), bandQs[i] / 10);
       }
       const cy = dbToY(hoverDb);
+
+      // Target value at hover position (1:1 with freqs array via same log spacing)
+      let hoverTargetDb = null;
+      if (currentPresetTarget && currentPresetTarget.length === VIZ_CURVE_POINTS) {
+        const tidx = Math.max(0, Math.min(VIZ_CURVE_POINTS - 1, Math.round(t * (VIZ_CURVE_POINTS - 1))));
+        hoverTargetDb = currentPresetTarget[tidx] + currentPresetPreamp;
+      }
 
       // Vertical crosshair line
       ctx.save();
@@ -1069,33 +1160,87 @@
       ctx.fill();
       ctx.restore();
 
-      // Tooltip
-      const freqStr = hoverFreq >= 1000
-        ? (hoverFreq / 1000).toFixed(1) + '\u202fkHz'
-        : Math.round(hoverFreq) + '\u202fHz';
-      const dbStr = (hoverDb >= 0 ? '+' : '\u2212') + Math.abs(hoverDb).toFixed(1) + '\u202fdB';
-      const label = freqStr + '   ' + dbStr;
+      // Dot on target curve
+      if (hoverTargetDb !== null) {
+        ctx.save();
+        ctx.strokeStyle = colorText;
+        ctx.globalAlpha = 0.5;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, dbToY(hoverTargetDb), 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const freqStr = hoverFreq >= 1000 ? (hoverFreq / 1000).toFixed(1) + 'k' : String(Math.round(hoverFreq));
+      const gainStr = hoverDb.toFixed(1).replace('-', '−');
 
       ctx.save();
       ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
-      const tw = ctx.measureText(label).width;
-      const th = 13;
-      const tp = 5;
-      const gap = 10;
-      let tx = cx + gap;
-      let ty = cy - th / 2 - tp;
-      if (tx + tw + tp * 2 > padLeft + plotW + 4) tx = cx - gap - tw - tp * 2;
-      ty = Math.max(padTop + 2, Math.min(padTop + plotH - th - tp * 2 - 2, ty));
-      ctx.fillStyle = colorBrand;
-      ctx.globalAlpha = 0.92;
-      ctx.beginPath();
-      ctx.roundRect(tx - tp, ty, tw + tp * 2, th + tp * 2, 4);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = colorBg;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(label, tx, ty + tp + th / 2);
+
+      const pad = 5, pillH = 24;
+      const xMin = padLeft + pad, xMax = padLeft + plotW - pad;
+      const yMin = padTop + 2, yMax = padTop + plotH - pillH - 2;
+      const clampX = (x, w) => Math.max(xMin, Math.min(xMax - w, x));
+      const clampY = y => Math.max(yMin, Math.min(yMax, y));
+
+      const drawPill = (text, x, y, w, color) => {
+        ctx.fillStyle = colorBg;
+        ctx.globalAlpha = 0.95;
+        ctx.beginPath();
+        ctx.roundRect(x - pad, y, w + pad * 2, pillH, 4);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = color;
+        ctx.fillText(text, x, y + 12);
+      };
+
+      // Frequency pill (on x-axis)
+      const freqW = ctx.measureText(freqStr).width;
+      drawPill(freqStr, clampX(cx - freqW / 2, freqW), padTop + plotH - 3, freqW, colorText);
+
+      // Gain & target pills (beside their dots)
+      const gainW = ctx.measureText(gainStr).width;
+      const rightFits = cx + 8 + gainW + pad <= xMax;
+      const side = rightFits ? 1 : -1;  // 1 = right, -1 = left
+
+      let gainX = clampX(side === 1 ? cx + 8 : cx - 8 - gainW, gainW);
+      let gainY = clampY(cy - 12);
+
+      if (hoverTargetDb !== null) {
+        const err = hoverTargetDb - hoverDb;
+        const sign = err >= 0 ? '+' : '';
+        const targetStr = hoverTargetDb.toFixed(1).replace('-', '−') + '  (' + sign + err.toFixed(1).replace('-', '−') + ')';
+        const targetW = ctx.measureText(targetStr).width;
+        const targetY_raw = dbToY(hoverTargetDb) - 12;
+
+        let targetX = clampX(side === 1 ? cx + 8 : cx - 8 - targetW, targetW);
+        let targetY = clampY(targetY_raw);
+
+        // Push apart vertically if overlapping horizontally
+        const hOverlap = Math.max(0, Math.min(gainX + gainW, targetX + targetW) - Math.max(gainX, targetX) + pad * 2);
+        if (hOverlap > 0) {
+          const vOverlap = Math.min(gainY + pillH, targetY + pillH) - Math.max(gainY, targetY);
+          if (vOverlap > 0) {
+            const push = vOverlap / 2 + 1;
+            if (cy <= dbToY(hoverTargetDb)) {
+              gainY = clampY(gainY - push);
+              targetY = clampY(targetY + push);
+            } else {
+              targetY = clampY(targetY - push);
+              gainY = clampY(gainY + push);
+            }
+          }
+        }
+
+        drawPill(gainStr, gainX, gainY, gainW, colorAccent);
+        drawPill(targetStr, targetX, targetY, targetW, colorText);
+      } else {
+        drawPill(gainStr, gainX, gainY, gainW, colorAccent);
+      }
+
       ctx.restore();
     }
   }
@@ -1184,6 +1329,8 @@
 
   // Reset flat
   document.getElementById("eq-reset").addEventListener("click", () => {
+    currentPresetTarget = null;
+    scheduleRedraw();
     resetSliders();
     log("EQ reset to flat");
   });
@@ -1252,6 +1399,41 @@
       btn.setAttribute("aria-expanded", String(!open));
       content.classList.toggle("hidden", open);
     });
+  });
+
+  // =========================================================================
+  // Preset Text card
+  // =========================================================================
+
+  document.getElementById("preset-text-apply").addEventListener("click", async () => {
+    const textarea = document.getElementById("preset-text-area");
+    const bands = parsePresetText(textarea.value);
+    if (!bands.length) {
+      log("Preset text: no valid filters found");
+      return;
+    }
+    for (let i = 0; i < NUM_BANDS; i++) {
+      if (!bands[i]) continue;
+      const [gainDb, qReal] = bands[i];
+      const clampedGain = Math.max(GAIN_MIN_DB, Math.min(GAIN_MAX_DB, gainDb));
+      bandGains[i] = encodeGain(clampedGain);
+      bandQs[i] = Math.max(0, Math.min(255, Math.round(qReal * 10)));
+    }
+    updateSlidersFromState();
+    currentPresetTarget = null;
+    scheduleRedraw();
+    log("Applying pasted preset");
+    if (connected) {
+      document.querySelectorAll("[data-action='preset']").forEach((b) => b.classList.remove("active"));
+      await selectPreset(4);
+      await sendCustomEQ();
+    }
+  });
+
+  document.getElementById("preset-text-clear").addEventListener("click", () => {
+    document.getElementById("preset-text-area").value = "";
+    currentPresetTarget = null;
+    scheduleRedraw();
   });
 
   // =========================================================================

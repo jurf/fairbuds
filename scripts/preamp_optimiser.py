@@ -3,12 +3,15 @@ AutoEq behaves quite differently based on different preamp values. This is a
 simple script that brute-forces the best preamp for all generated EQs
 """
 
+import json
 import multiprocessing
 import shutil
 import subprocess
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -18,12 +21,16 @@ from tqdm import tqdm
 # ```
 PATCHED_AUTOEQ = True
 
+_json_data: dict = {}  # config_key -> entry dict, populated at startup
+_json_file_lock = threading.Lock()  # serialises writes to DATA_JSON
+
 ROOT = Path(__file__).resolve().parent.parent
 AUTOEQ_DIR = Path(ROOT, "AutoEq")
 MEASUREMENTS_DIR = Path(ROOT, "measurements")
 SIGNATURES_DIR = Path(ROOT, "signatures")
 TARGETS_DIR = Path(ROOT, "targets")
 PEX_DIR = Path(ROOT, "pex")
+DATA_JSON = Path(ROOT, "web", "data.json")
 
 MIN_PREAMP = -6
 MAX_PREAMP = 3
@@ -55,14 +62,15 @@ TARGET_711 = Path(AUTOEQ_DIR, "targets", "AutoEq in-ear.csv")
 BASS_BOOST_711 = 8
 
 CONFIGS = {
-    "presets/rtings": {
-        "measurement": "RTINGS (main eq, ANC Off)",
+    "presets/soundguys": {
+        "measurement": "SoundGuys (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
         "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
+        "recommended": True,
     },
-    "presets/soundguys": {
-        "measurement": "SoundGuys (main eq, ANC Off)",
+    "presets/rtings": {
+        "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
         "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
@@ -77,15 +85,15 @@ CONFIGS = {
         "target": TARGET_711,
         "bass_boost": BASS_BOOST_711 + BASS_BOOST,
     },
-    "presets_app/rtings": {
-        "measurement": "RTINGS (main eq, ANC Off)",
+    "presets_app/soundguys": {
+        "measurement": "SoundGuys (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
         "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
         "is_app": True,
     },
-    "presets_app/soundguys": {
-        "measurement": "SoundGuys (main eq, ANC Off)",
+    "presets_app/rtings": {
+        "measurement": "RTINGS (main eq, ANC Off)",
         "signature": "reconstructed.csv",
         "target": TARGET_5128,
         "bass_boost": BASS_BOOST_5128 + BASS_BOOST,
@@ -125,6 +133,57 @@ def parse_loss(lines):
     raise ValueError("LOSS not found in output:\n" + "\n".join(lines))
 
 
+def _build_json_output() -> dict:
+    out: dict = {"presets": [], "presets_app": []}
+    for key, entry in _json_data.items():
+        folder = key.split("/", 1)[0]
+        if folder in out and "text" in entry:
+            out[folder].append(entry)
+    return out
+
+
+def init_json_data() -> None:
+    """Populate _json_data from existing .txt files on disk. Call once before threads start."""
+    seen: dict = {"presets": set(), "presets_app": set()}
+    for config_key, config in CONFIGS.items():
+        folder, stem = config_key.split("/", 1)
+        filename = stem + ".txt"
+        txt_path = Path(ROOT, folder, filename)
+        entry: dict = {"name": filename}
+        if config.get("recommended"):
+            entry["recommended"] = True
+        if txt_path.exists():
+            entry["text"] = txt_path.read_text().strip()
+        _json_data[config_key] = entry
+        seen[folder].add(filename)
+
+    # Any extra .txt files not covered by CONFIGS
+    for folder in ("presets", "presets_app"):
+        for txt_path in sorted(Path(ROOT, folder).glob("*.txt")):
+            if txt_path.name not in seen[folder]:
+                key = f"{folder}/_extra_{txt_path.stem}"
+                _json_data[key] = {
+                    "name": txt_path.name,
+                    "text": txt_path.read_text().strip(),
+                }
+
+
+def flush_json_file() -> None:
+    """Write _json_data to DATA_JSON. Must be called under _json_file_lock."""
+    tmp = DATA_JSON.with_suffix(f".{threading.get_ident()}.tmp")
+    tmp.write_text(json.dumps(_build_json_output(), indent=2))
+    tmp.replace(DATA_JSON)
+
+
+def extract_target(results_dir: Path, measurement: str) -> list:
+    """Returns 512 dB values (equalization) at log-spaced frequencies
+    matching the web visualiser"""
+    df = pd.read_csv(Path(results_dir, measurement, f"{measurement}.csv"))
+    freqs = np.geomspace(20, 20000, 512)
+    vals = np.interp(freqs, df["frequency"].values, df["equalization"].values)
+    return [round(float(v), 2) for v in vals]
+
+
 def run(
     results,
     preamp=0,
@@ -133,6 +192,8 @@ def run(
     measurement=None,
     bass_boost=0,
     is_app=False,
+    # Ignore other metadata
+    **kwargs,
 ):
     results_dir = Path(ROOT, "results_app" if is_app else "results")
     pex_config = Path(PEX_DIR, f"fairbuds{'_app' if is_app else ''}.yaml")
@@ -205,7 +266,7 @@ def optimise_preamp(name, config, position=0):
     best_std = float("inf")
     best_preamp = None
 
-    # Final location settings
+    # Location settings
     is_app = config.get("is_app", False)
     results_dir = Path(ROOT, "results_app" if is_app else "results")
     src = Path(
@@ -226,15 +287,28 @@ def optimise_preamp(name, config, position=0):
         if std < best_std:
             best_std = std
             best_preamp = current_preamp
-            # Allow testing while we wait
+            # Allow testing while we wait — update .txt for Python CLI and data.json for web
             shutil.copy(src, dst)
+            with _json_file_lock:
+                entry = _json_data[name]
+                entry["text"] = dst.read_text().strip()
+                entry["preamp"] = best_preamp
+                entry["target"] = extract_target(results_dir, config["measurement"])
+                flush_json_file()
         pbar.set_postfix(preamp=f"{best_preamp:.1f} dB", loss=f"{best_std:.2f}")
         pbar.update(1)
         current_preamp = round(current_preamp + STEP, 2)
     pbar.close()
 
-    # Final run with optimal preamp
+    # Final run with optimal preamp to ensure results CSV reflects optimal settings
     results = run(results, best_preamp, **config)
+    shutil.copy(src, dst)
+    with _json_file_lock:
+        entry = _json_data[name]
+        entry["text"] = dst.read_text().strip()
+        entry["preamp"] = best_preamp
+        entry["target"] = extract_target(results_dir, config["measurement"])
+        flush_json_file()
 
     # Extract the error for Wavelet fine-tuning
     extract_error(results_dir, config["measurement"], best_preamp)
@@ -243,6 +317,10 @@ def optimise_preamp(name, config, position=0):
 
 
 if __name__ == "__main__":
+    init_json_data()
+    with _json_file_lock:
+        flush_json_file()  # initial write from existing .txt files on disk
+
     workers = max(1, multiprocessing.cpu_count() - 3)
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
