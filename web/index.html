@@ -71,7 +71,7 @@
             title="More info">?</button>
         </div>
         <div class="info-content hidden" id="info-builtin">
-          <p class="preset-description">The official built-in presets available in the Fairbuds app. “Studio” solves
+          <p class="card-text">The official built-in presets available in the Fairbuds app. “Studio” solves
             some issues of the “Main” preset (like sibilant loudness), but still noticeably lacks in treble.</p>
         </div>
         <div class="preset-row">
@@ -87,15 +87,15 @@
             title="More info">?</button>
         </div>
         <div class="info-content hidden" id="info-custom">
-          <p class="preset-description">⚠️ The volume may jump quite drastically between presets, since letting the
+          <p class="card-text">⚠️ The volume may jump quite drastically between presets, since letting the
             optimiser change it drastically improved the curve accuracy.</p>
-          <p class="preset-description">A collection of presets generated with <a
+          <p class="card-text">A collection of presets generated with <a
               href="https://github.com/jaakkopasanen/AutoEq/">AutoEq</a> based on frequency response curves from
             different
             sources. They use <a href="https://github.com/jurf/fairbuds/blob/main/README.md#q-values">undocumented parts
               of
               the protocol</a> to achieve greater accuracy.</p>
-          <p class="preset-description">Due to different anatomy, no completely-universal neutral earbud target <a
+          <p class="card-text">Due to different anatomy, no completely-universal neutral earbud target <a
               href="https://www.youtube.com/watch?v=EZoKPtzjdtQ">can exist</a>. These presets should serve as a good
             base
             but in the end they are tuned to my personal preference; see <a
@@ -111,7 +111,7 @@
             title="More info">?</button>
         </div>
         <div class="info-content hidden" id="info-appcompat">
-          <p class="preset-description">Presets using only settings exposed by the official Fairbuds app. Use these if
+          <p class="card-text">Presets using only settings exposed by the official Fairbuds app. Use these if
             you
             want to play with the values, as they have a constant band width. You will not achieve as good a treble
             response
@@ -140,7 +140,7 @@
         <h2>AutoEq preset <button class="btn-round" data-action="info-toggle" aria-expanded="false"
             aria-controls="info-preset-text" title="More info">?</button></h2>
         <div class="info-content hidden" id="info-preset-text">
-          <p class="preset-description">Load an <a href="https://github.com/jaakkopasanen/AutoEq" target="_blank"
+          <p class="card-text">Load an <a href="https://github.com/jaakkopasanen/AutoEq" target="_blank"
               rel="noopener noreferrer">AutoEQ</a>-generated ParametricEQ preset. The
             <code>Preamp</code> line is ignored — the Fairbuds do not support it.
           </p>
@@ -154,10 +154,40 @@
 
     </div>
 
-    <!-- Response visualizer — standalone crd -->
-    <div class="card" id="viz-card">
-      <h2>Custom EQ response</h2>
-      <canvas id="eq-viz" aria-label="EQ frequency response"></canvas>
+    <!-- Right column: visualiser + why -->
+    <div class="right-col">
+
+      <!-- Response visualizer -->
+      <div class="card" id="viz-card">
+        <h2>Custom EQ response</h2>
+        <canvas id="eq-viz" aria-label="EQ frequency response"></canvas>
+      </div>
+
+      <!-- Why? -->
+      <div class="card" id="why-card">
+        <h2>Why?
+          <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-why"
+            title="More info">?</button>
+        </h2>
+        <div class="info-content hidden" id="info-why">
+          <p class="card-text">The Fairbuds are not tuned correctly.</p>
+          <p class="card-text">Audio is mastered on speakers. When you plug audio directly into your ear canals,
+            you bypass everything
+            that
+            would normally shape the sound, like the room, your head, torso and outer ear.</p>
+          <p class="card-text">If you do not compensate for this, the sound will not sound natural to you. The
+            Fairbuds are tuned more like
+            speakers than earbuds.</p>
+          <p class="card-text">Thankfully, the equaliser on them, albeit limited, is programmable, so we can use
+            software like <a href="https://github.com/jaakkopasanen/AutoEq" target="_blank"
+              rel="noopener noreferrer">AutoEq</a> to
+            generate suitable presets.</p>
+          <p class="card-text">This app includes some best-effort presets and handles the EQ control for you. Give it a
+            try!</p>
+        </div>
+
+      </div>
+
     </div>
 
     <!-- Log -->

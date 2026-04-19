@@ -281,7 +281,7 @@ h1 {
     flex-wrap: wrap;
 }
 
-.preset-description {
+.card-text {
     margin-bottom: 0.5rem;
 
     a {
@@ -637,6 +637,12 @@ footer {
     width: 100%;
 }
 
+.right-col {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
 #viz-card {
     background: var(--surface-accent);
     display: flex;
@@ -667,14 +673,17 @@ footer {
         grid-area: main;
     }
 
-    #viz-card {
+    .right-col {
         grid-area: viz;
+        position: sticky;
+        top: 20px;
+        align-self: start;
+    }
+
+    #viz-card {
         max-width: none;
         min-width: 320px;
         min-height: 520px;
-        position: sticky;
-        top: 20px;
-        margin-bottom: 0;
     }
 
     #log-card {
