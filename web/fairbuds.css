@@ -483,7 +483,7 @@ h1 {
 }
 
 footer {
-    margin-top: 24px;
+    margin-top: 32px;
     padding: 16px 0;
     text-align: center;
 
@@ -498,8 +498,12 @@ footer {
         }
     }
 
+    div {
+        margin-top: 8px;
+    }
+
     .disclaimer {
-        margin-top: 6px;
+        color: var(--text-dim);
     }
 }
 
