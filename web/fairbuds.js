@@ -430,9 +430,7 @@
       connectBtn.style.display = "none";
       disconnectBtn.style.display = "";
 
-      // Show UI cards
-      document.getElementById("presets-card").classList.remove("hidden");
-      document.getElementById("eq-card").classList.remove("hidden");
+      // Enable interaction
       enableControls(true);
 
       // Request device info
@@ -500,7 +498,7 @@
   }
 
   function enableControls(enabled) {
-    document.querySelectorAll(".preset-btn").forEach((btn) => {
+    document.querySelectorAll("[data-action='preset']").forEach((btn) => {
       btn.disabled = !enabled;
     });
     document.getElementById("eq-apply").disabled = !enabled;
@@ -607,8 +605,8 @@
     const track = document.createElementNS(ns, "path");
     track.setAttribute("d", describeArc(cx, cy, r, KNOB_START_DEG, KNOB_SWEEP_DEG));
     track.setAttribute("fill", "none");
-    track.setAttribute("stroke", "var(--surface2)");
-    track.setAttribute("stroke-width", "3");
+    track.setAttribute("stroke", "color-mix(in srgb, var(--text) 25%, transparent)");
+    track.setAttribute("stroke-width", "1");
     track.setAttribute("stroke-linecap", "round");
 
     // Value arc — accent-colored, from start to current value
@@ -635,9 +633,9 @@
     qText.setAttribute("y", cy);
     qText.setAttribute("text-anchor", "middle");
     qText.setAttribute("dominant-baseline", "central");
-    qText.setAttribute("fill", "var(--green)");
+    qText.setAttribute("fill", "var(--text)");
     qText.setAttribute("font-size", "8");
-    qText.setAttribute("font-weight", "600");
+    qText.setAttribute("font-weight", "400");
     qText.setAttribute("pointer-events", "none");
     qText.textContent = (DEFAULT_Q / 10).toFixed(1);
 
@@ -706,7 +704,7 @@
 
     const db = decodeGain(encodedVal);
     const dbEl = document.getElementById(`db-val-${i}`);
-    if (dbEl) dbEl.textContent = db >= 0 ? `+${db.toFixed(1)}` : db.toFixed(1);
+    if (dbEl) dbEl.textContent = db >= 0 ? `+${db.toFixed(1)}` : `\u2212${Math.abs(db).toFixed(1)}`;
   }
 
   function buildEQSliders() {
@@ -815,7 +813,7 @@
     .addEventListener("click", disconnect);
 
   // Preset buttons
-  document.querySelectorAll(".preset-btn").forEach((btn) => {
+  document.querySelectorAll("[data-action='preset']").forEach((btn) => {
     btn.addEventListener("click", async function () {
       if (!connected) {
         return;
@@ -825,7 +823,7 @@
 
       // Highlight active preset
       document
-        .querySelectorAll(".preset-btn")
+        .querySelectorAll("[data-action='preset']")
         .forEach((b) => b.classList.remove("active"));
       this.classList.add("active");
 
@@ -850,7 +848,7 @@
 
     // Clear preset highlight when using custom EQ
     document
-      .querySelectorAll(".preset-btn")
+      .querySelectorAll("[data-action='preset']")
       .forEach((b) => b.classList.remove("active"));
 
     await selectPreset(4);
@@ -867,7 +865,8 @@
     containerEl.innerHTML = "";
     presets.forEach((preset) => {
       const btn = document.createElement("button");
-      btn.className = "preset-btn";
+      btn.dataset.action = "preset";
+      btn.className = "btn btn-secondary";
       btn.textContent = preset.name;
       if (preset.recommended) {
         const badge = document.createElement("span");
@@ -878,7 +877,7 @@
       btn.addEventListener("click", async function () {
         if (!connected) return;
         document
-          .querySelectorAll(".preset-btn")
+          .querySelectorAll("[data-action='preset']")
           .forEach((b) => b.classList.remove("active"));
         this.classList.add("active");
         await applyCustomPreset(preset);
@@ -891,6 +890,7 @@
   function refreshPresetButtons() {
     addPresetButtons(CUSTOM_PRESETS, document.getElementById("custom-presets"));
     addPresetButtons(APP_PRESETS, document.getElementById("app-presets"));
+    if (!connected) enableControls(false);
   }
 
   loadPresets().then(refreshPresetButtons);
@@ -917,7 +917,7 @@
   }
 
   // Info toggles
-  document.querySelectorAll(".info-btn").forEach((btn) => {
+  document.querySelectorAll("[data-action='info-toggle']").forEach((btn) => {
     btn.addEventListener("click", () => {
       const content = document.getElementById(btn.getAttribute("aria-controls"));
       const open = btn.getAttribute("aria-expanded") === "true";
@@ -925,4 +925,54 @@
       content.classList.toggle("hidden", open);
     });
   });
+
+  // =========================================================================
+  // Theme Toggle
+  // =========================================================================
+
+  (function initTheme() {
+    const root = document.documentElement;
+    const btn = document.getElementById("theme-toggle");
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const SUN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.772 18.894a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 001.061-1.06l-1.591-1.591zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.166 5.106a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 001.061-1.06l-1.591-1.591z"/></svg>';
+    const MOON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/></svg>';
+    const AUTO_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.25 5.25a3 3 0 013-3h13.5a3 3 0 013 3V15a3 3 0 01-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 01-.53 1.28h-9a.75.75 0 01-.53-1.28l.621-.622A2.25 2.25 0 009 18.257V18h-3a3 3 0 01-3-3V5.25zm1.5 0v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5z"/></svg>';
+
+    // stored: "dark" | "light" | null (= follow browser)
+    function applyTheme(stored) {
+      root.setAttribute("data-theme", stored || (mq.matches ? "dark" : "light"));
+    }
+
+    function updateBtn(stored) {
+      if (stored === "dark") {
+        btn.innerHTML = MOON_SVG;
+        btn.title = "Dark mode (click for light)";
+      } else if (stored === "light") {
+        btn.innerHTML = SUN_SVG;
+        btn.title = "Light mode (click for browser preference)";
+      } else {
+        btn.innerHTML = AUTO_SVG;
+        btn.title = "Browser preference (click for dark)";
+      }
+    }
+
+    var current = localStorage.getItem("theme"); // "dark" | "light" | null
+    applyTheme(current);
+    updateBtn(current);
+
+    // Keep in sync when the system preference changes while in auto mode
+    mq.addEventListener("change", function () {
+      if (!localStorage.getItem("theme")) applyTheme(null);
+    });
+
+    btn.addEventListener("click", function () {
+      var stored = localStorage.getItem("theme");
+      var next = stored === null ? "dark" : stored === "dark" ? "light" : null;
+      if (next) localStorage.setItem("theme", next);
+      else localStorage.removeItem("theme");
+      applyTheme(next);
+      updateBtn(next);
+    });
+  })();
 })();

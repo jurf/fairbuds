@@ -5,530 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fairbuds EQ</title>
-  <style>
-    :root {
-      --bg: #1a1a2e;
-      --surface: #16213e;
-      --surface2: #0f3460;
-      --accent: #e94560;
-      --accent-dim: #a83249;
-      --text: #eee;
-      --text-dim: #999;
-      --green: #93c5fd;
-      --yellow: #f0c040;
-      --red: #e94560;
-      --radius: 8px;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-    }
-
-    h1 {
-      font-size: 1.6rem;
-      margin-bottom: 4px;
-      letter-spacing: 1px;
-    }
-
-    .subtitle {
-      color: var(--text-dim);
-      font-size: 0.85rem;
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 20px;
-      width: 100%;
-      max-width: 680px;
-      margin-bottom: 16px;
-
-      h2 {
-        display: flex;
-        align-items: center;
-        font-size: 1rem;
-        color: var(--text-dim);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-      }
-
-      h3 {
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-      }
-    }
-
-    /* Connection */
-    #connect-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 12px 28px;
-      border-radius: var(--radius);
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s;
-
-      &:hover {
-        background: var(--accent-dim);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-
-    #reload-presets-btn {
-      background: transparent;
-      color: var(--text-dim);
-      border: none;
-      font-size: 1rem;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: var(--radius);
-      margin-left: auto;
-      transition: color 0.2s;
-
-      &:hover {
-        color: var(--text);
-      }
-    }
-
-    #disconnect-btn {
-      background: transparent;
-      color: var(--text-dim);
-      border: 1px solid var(--text-dim);
-      padding: 12px 20px;
-      border-radius: var(--radius);
-      font-size: 0.9rem;
-      cursor: pointer;
-      margin-left: 8px;
-      display: none;
-
-      &:hover {
-        border-color: var(--red);
-        color: var(--red);
-      }
-    }
-
-    .conn-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    #status {
-      color: var(--text-dim);
-      font-size: 0.9rem;
-
-      &.connected {
-        color: var(--green);
-      }
-
-      &.error {
-        color: var(--red);
-
-        a {
-          color: var(--text);
-          text-decoration: underline;
-        }
-      }
-    }
-
-    /* Battery */
-    .battery-row {
-      display: flex;
-      gap: 24px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .battery-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .battery-icon {
-      font-size: 1.3rem;
-    }
-
-    .battery-val {
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-
-    .battery-label {
-      color: var(--text-dim);
-      font-size: 0.8rem;
-    }
-
-    #device-name {
-      color: var(--text-dim);
-      font-size: 0.85rem;
-      margin-left: auto;
-    }
-
-    /* Presets */
-    .preset-row {
-      margin-top: 1rem;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .preset-description {
-      color: var(--text-dim);
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-
-      a {
-        color: var(--text);
-        text-decoration: none;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-
-    .preset-btn {
-      position: relative;
-      background: var(--surface2);
-      color: var(--text);
-      border: 2px solid transparent;
-      padding: 10px 20px;
-      border-radius: var(--radius);
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.2s;
-
-      #custom-presets &,
-      #app-presets & {
-        font-family: "SF Mono", "Fira Code", monospace;
-      }
-
-      &:hover {
-        border-color: var(--accent);
-      }
-
-      &.active {
-        border-color: var(--accent);
-        background: var(--accent-dim);
-      }
-
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      .badge {
-        position: absolute;
-        top: -6px;
-        right: -6px;
-        background: var(--yellow);
-        color: var(--bg);
-        font-size: 0.55rem;
-        font-weight: 700;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        text-transform: uppercase;
-        padding: 2px 6px;
-        border-radius: 4px;
-        line-height: 1;
-        pointer-events: none;
-      }
-    }
-
-    /* EQ */
-    .eq-scroll-wrap {
-      overflow-x: auto;
-      overflow-y: visible;
-      /* let it extend to card edges so scroll indicator reaches the edge */
-      margin: 0 -4px;
-      padding: 0 4px;
-    }
-
-    .eq-inner {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      /* wide enough to scroll on small screens; auto-shrinks on large ones */
-      min-width: max-content;
-      width: 100%;
-    }
-
-    .eq-container {
-      display: flex;
-      gap: 2px;
-      align-items: flex-end;
-      height: 280px;
-      padding-top: 20px;
-    }
-
-    .eq-band {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: 1;
-      min-width: 40px;
-      height: 100%;
-
-      .db-val {
-        font-size: 0.75rem;
-        color: var(--green);
-        font-weight: 600;
-        min-height: 20px;
-        margin-bottom: 4px;
-      }
-
-      .slider-wrap {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        min-height: 0;
-      }
-
-      input[type="range"] {
-        display: none;
-      }
-
-      .custom-slider {
-        position: relative;
-        width: 6px;
-        height: 100%;
-        background: var(--surface2);
-        border-radius: 3px;
-        cursor: ns-resize;
-        touch-action: none;
-        user-select: none;
-        -webkit-user-select: none;
-        outline: none;
-
-        &:focus-visible {
-          outline: 2px solid var(--accent);
-          outline-offset: 2px;
-        }
-      }
-
-      .custom-slider-thumb {
-        position: absolute;
-        left: 50%;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--accent);
-        transform: translateX(-50%) translateY(50%);
-        pointer-events: none;
-      }
-
-      .custom-slider-fill {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        background: var(--accent);
-        border-radius: 3px;
-        pointer-events: none;
-      }
-
-      .freq-label {
-        font-size: 0.7rem;
-        color: var(--text-dim);
-        margin-top: 6px;
-        white-space: nowrap;
-      }
-    }
-
-    .eq-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 14px;
-      flex-wrap: wrap;
-
-      button {
-        background: var(--surface2);
-        color: var(--text);
-        border: 1px solid var(--text-dim);
-        padding: 8px 16px;
-        border-radius: var(--radius);
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          border-color: var(--accent);
-          color: var(--accent);
-        }
-
-        &:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-      }
-    }
-
-    /* Log */
-    #log {
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      max-height: 160px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 10px;
-      border-radius: var(--radius);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .github-link {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      color: var(--text-dim);
-      transition: color 0.2s;
-
-      &:hover {
-        color: var(--text);
-      }
-
-      svg {
-        width: 28px;
-        height: 28px;
-        fill: currentColor;
-      }
-    }
-
-    footer {
-      margin-top: 24px;
-      padding: 16px 0;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-
-      a {
-        color: var(--accent);
-        text-decoration: none;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-
-      .disclaimer {
-        margin-top: 6px;
-        font-size: 0.75rem;
-        color: var(--text-dim);
-      }
-    }
-
-    .section-heading {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 1rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .section-heading h3 {
-      margin: 0;
-    }
-
-    .info-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      background: var(--surface2);
-      color: var(--text-dim);
-      border: none;
-      border-radius: 50%;
-      font-size: 0.7rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-      flex-shrink: 0;
-
-      &:hover,
-      &[aria-expanded="true"] {
-        background: var(--accent-dim);
-        color: var(--text);
-      }
-    }
-
-    .info-content {
-      margin-bottom: 0.75rem;
-
-      &.hidden {
-        display: none !important;
-      }
-    }
-
-    /* Q Knobs */
-    .q-row {
-      display: flex;
-      gap: 2px;
-    }
-
-    .q-col {
-      flex: 1;
-      min-width: 48px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .q-knob {
-      cursor: ns-resize;
-      touch-action: none;
-      width: 48px;
-      height: 48px;
-      flex-shrink: 0;
-      display: block;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .q-knob text {
-      font-family: "SF Mono", "Fira Code", monospace;
-    }
-
-    @media (max-width: 500px) {
-      .eq-band .freq-label {
-        font-size: 0.6rem;
-      }
-
-      .card {
-        padding: 14px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="fairbuds.css" />
 </head>
 
 <body>
+  <button id="theme-toggle" aria-label="Toggle theme" title="Browser preference (click for dark)">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.772 18.894a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 001.061-1.06l-1.591-1.591zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.166 5.106a.75.75 0 00-1.06 1.06l1.59 1.591a.75.75 0 001.061-1.06l-1.591-1.591z" />
+    </svg>
+  </button>
   <a class="github-link" href="https://github.com/jurf/fairbuds" target="_blank" rel="noopener noreferrer"
     title="GitHub">
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -537,15 +23,15 @@
     </svg>
   </a>
 
-  <h1>🎧 Fairbuds EQ</h1>
-  <p class="subtitle">Fairphone Fairbuds — Web Bluetooth Control</p>
+  <h1>Fairbuds EQ</h1>
+  <p class="subtitle">Improve the sound of your Fairphone Fairbuds</p>
 
   <!-- Connection -->
   <div class="card">
     <h2>Connection</h2>
     <div class="conn-row">
-      <button id="connect-btn">Connect</button>
-      <button id="disconnect-btn">Disconnect</button>
+      <button id="connect-btn" class="btn btn-primary">Connect</button>
+      <button id="disconnect-btn" class="btn btn-secondary">Disconnect</button>
       <span id="status">Not connected</span>
     </div>
   </div>
@@ -573,29 +59,33 @@
   </div>
 
   <!-- Presets -->
-  <div class="card hidden" id="presets-card">
-    <h2>Presets <button id="reload-presets-btn" title="Reload presets">↻</button></h2>
+  <div class="card" id="presets-card">
+    <h2>Presets <button id="reload-presets-btn" class="btn-round" title="Reload presets">↻</button></h2>
 
     <div class="section-heading">
       <h3>Built-in</h3>
-      <button class="info-btn" aria-expanded="false" aria-controls="info-builtin" title="More info">?</button>
+      <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-builtin"
+        title="More info">?</button>
     </div>
     <div class="info-content hidden" id="info-builtin">
-      <p class="preset-description">The official built-in presets available in the Fairbuds app. "Studio" solves some
-        issues of the "Main" preset, but still noticeably lacks in treble.</p>
+      <p class="preset-description">The official built-in presets available in the Fairbuds app. “Studio” solves some
+        issues of the “Main” preset, but still noticeably lacks in treble.</p>
     </div>
     <div class="preset-row">
-      <button class="preset-btn" data-preset="1">Main</button>
-      <button class="preset-btn" data-preset="2">Bass Boost</button>
-      <button class="preset-btn" data-preset="3">Flat</button>
-      <button class="preset-btn" data-preset="4">Studio</button>
+      <button class="btn btn-secondary" data-action="preset" data-preset="1">Main</button>
+      <button class="btn btn-secondary" data-action="preset" data-preset="2">Bass Boost</button>
+      <button class="btn btn-secondary" data-action="preset" data-preset="3">Flat</button>
+      <button class="btn btn-secondary" data-action="preset" data-preset="4">Studio</button>
     </div>
 
     <div class="section-heading">
-      <h3>Custom (using full EQ capability)</h3>
-      <button class="info-btn" aria-expanded="false" aria-controls="info-custom" title="More info">?</button>
+      <h3>Custom</h3>
+      <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-custom"
+        title="More info">?</button>
     </div>
     <div class="info-content hidden" id="info-custom">
+      <p class="preset-description">⚠️ The volume may jump quite drastically between presets, since letting the
+        optimiser change it drastically improved the curve accuracy.</p>
       <p class="preset-description">A collection of presets generated with <a
           href="https://github.com/jaakkopasanen/AutoEq/">AutoEq</a> based on frequency response curves from different
         sources. They use <a href="https://github.com/jurf/fairbuds/blob/main/README.md#q-values">undocumented parts of
@@ -605,14 +95,13 @@
         but in the end they are tuned to my personal preference; see <a
           href="https://github.com/jurf/fairbuds/blob/main/README.md#generating-autoeq-presets">this page</a> for how to
         generate your own.</p>
-      <p class="preset-description">⚠️ The volume may jump quite drastically between presets, since letting the
-        optimiser change it drastically improved the curve accuracy.</p>
     </div>
     <div class="preset-row" id="custom-presets"></div>
 
     <div class="section-heading">
       <h3>Custom (app-compatible)</h3>
-      <button class="info-btn" aria-expanded="false" aria-controls="info-appcompat" title="More info">?</button>
+      <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-appcompat"
+        title="More info">?</button>
     </div>
     <div class="info-content hidden" id="info-appcompat">
       <p class="preset-description">Presets using only settings exposed by the official Fairbuds app. Use these if you
@@ -623,7 +112,7 @@
   </div>
 
   <!-- Custom EQ -->
-  <div class="card hidden" id="eq-card">
+  <div class="card" id="eq-card">
     <h2>Custom EQ</h2>
     <div class="eq-scroll-wrap">
       <div class="eq-inner">
@@ -632,8 +121,8 @@
       </div>
     </div>
     <div class="eq-actions">
-      <button id="eq-apply">Apply EQ</button>
-      <button id="eq-reset">Reset Flat</button>
+      <button id="eq-apply" class="btn btn-primary">Apply EQ</button>
+      <button id="eq-reset" class="btn btn-secondary">Reset</button>
     </div>
   </div>
 
@@ -645,7 +134,7 @@
 
   <footer>
     <a href="https://github.com/jurf/fairbuds" target="_blank" rel="noopener noreferrer">
-      jurf/fairbuds on Github
+      jurf/fairbuds on GitHub
     </a>
     <div class="disclaimer">This website is not associated in any way with Fairphone.</div>
   </footer>
