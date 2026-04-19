@@ -26,110 +26,130 @@
   <h1>Fairbuds EQ</h1>
   <p class="subtitle">Improve the sound of your Fairphone Fairbuds</p>
 
-  <!-- Connection -->
-  <div class="card">
-    <h2>Connection</h2>
-    <div class="conn-row">
-      <button id="connect-btn" class="btn btn-primary">Connect</button>
-      <button id="disconnect-btn" class="btn btn-secondary">Disconnect</button>
-      <span id="status">Not connected</span>
-    </div>
-  </div>
+  <div class="page-layout">
+    <div class="main-col">
 
-  <!-- Device Info -->
-  <div class="card hidden" id="info-card">
-    <h2>Device Info</h2>
-    <div class="battery-row">
-      <div class="battery-item">
-        <span class="battery-icon">🔋</span>
-        <div>
-          <div class="battery-val" id="bat-left">—</div>
-          <div class="battery-label">Left</div>
+      <!-- Connection -->
+      <div class="card">
+        <h2>Connection</h2>
+        <div class="conn-row">
+          <button id="connect-btn" class="btn btn-primary">Connect</button>
+          <button id="disconnect-btn" class="btn btn-secondary">Disconnect</button>
+          <span id="status">Not connected</span>
         </div>
       </div>
-      <div class="battery-item">
-        <span class="battery-icon">🔋</span>
-        <div>
-          <div class="battery-val" id="bat-right">—</div>
-          <div class="battery-label">Right</div>
+
+      <!-- Device Info -->
+      <div class="card hidden" id="info-card">
+        <h2>Device Info</h2>
+        <div class="battery-row">
+          <div class="battery-item">
+            <span class="battery-icon">🔋</span>
+            <div>
+              <div class="battery-val" id="bat-left">—</div>
+              <div class="battery-label">Left</div>
+            </div>
+          </div>
+          <div class="battery-item">
+            <span class="battery-icon">🔋</span>
+            <div>
+              <div class="battery-val" id="bat-right">—</div>
+              <div class="battery-label">Right</div>
+            </div>
+          </div>
+          <span id="device-name"></span>
         </div>
       </div>
-      <span id="device-name"></span>
-    </div>
-  </div>
 
-  <!-- Presets -->
-  <div class="card" id="presets-card">
-    <h2>Presets <button id="reload-presets-btn" class="btn-round" title="Reload presets">↻</button></h2>
+      <!-- Presets -->
+      <div class="card" id="presets-card">
+        <h2>Presets <button id="reload-presets-btn" class="btn-round" title="Reload presets">↻</button></h2>
 
-    <div class="section-heading">
-      <h3>Built-in</h3>
-      <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-builtin"
-        title="More info">?</button>
-    </div>
-    <div class="info-content hidden" id="info-builtin">
-      <p class="preset-description">The official built-in presets available in the Fairbuds app. “Studio” solves some
-        issues of the “Main” preset, but still noticeably lacks in treble.</p>
-    </div>
-    <div class="preset-row">
-      <button class="btn btn-secondary" data-action="preset" data-preset="1">Main</button>
-      <button class="btn btn-secondary" data-action="preset" data-preset="2">Bass Boost</button>
-      <button class="btn btn-secondary" data-action="preset" data-preset="3">Flat</button>
-      <button class="btn btn-secondary" data-action="preset" data-preset="4">Studio</button>
-    </div>
+        <div class="section-heading">
+          <h3>Built-in</h3>
+          <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-builtin"
+            title="More info">?</button>
+        </div>
+        <div class="info-content hidden" id="info-builtin">
+          <p class="preset-description">The official built-in presets available in the Fairbuds app. “Studio” solves
+            some
+            issues of the “Main” preset, but still noticeably lacks in treble.</p>
+        </div>
+        <div class="preset-row">
+          <button class="btn btn-secondary" data-action="preset" data-preset="1">Main</button>
+          <button class="btn btn-secondary" data-action="preset" data-preset="2">Bass Boost</button>
+          <button class="btn btn-secondary" data-action="preset" data-preset="3">Flat</button>
+          <button class="btn btn-secondary" data-action="preset" data-preset="4">Studio</button>
+        </div>
 
-    <div class="section-heading">
-      <h3>Custom</h3>
-      <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-custom"
-        title="More info">?</button>
-    </div>
-    <div class="info-content hidden" id="info-custom">
-      <p class="preset-description">⚠️ The volume may jump quite drastically between presets, since letting the
-        optimiser change it drastically improved the curve accuracy.</p>
-      <p class="preset-description">A collection of presets generated with <a
-          href="https://github.com/jaakkopasanen/AutoEq/">AutoEq</a> based on frequency response curves from different
-        sources. They use <a href="https://github.com/jurf/fairbuds/blob/main/README.md#q-values">undocumented parts of
-          the protocol</a> to achieve greater accuracy.</p>
-      <p class="preset-description">Due to different anatomy, no completely-universal neutral earbud target <a
-          href="https://www.youtube.com/watch?v=EZoKPtzjdtQ">can exist</a>. These presets should serve as a good base
-        but in the end they are tuned to my personal preference; see <a
-          href="https://github.com/jurf/fairbuds/blob/main/README.md#generating-autoeq-presets">this page</a> for how to
-        generate your own.</p>
-    </div>
-    <div class="preset-row" id="custom-presets"></div>
+        <div class="section-heading">
+          <h3>Custom</h3>
+          <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-custom"
+            title="More info">?</button>
+        </div>
+        <div class="info-content hidden" id="info-custom">
+          <p class="preset-description">⚠️ The volume may jump quite drastically between presets, since letting the
+            optimiser change it drastically improved the curve accuracy.</p>
+          <p class="preset-description">A collection of presets generated with <a
+              href="https://github.com/jaakkopasanen/AutoEq/">AutoEq</a> based on frequency response curves from
+            different
+            sources. They use <a href="https://github.com/jurf/fairbuds/blob/main/README.md#q-values">undocumented parts
+              of
+              the protocol</a> to achieve greater accuracy.</p>
+          <p class="preset-description">Due to different anatomy, no completely-universal neutral earbud target <a
+              href="https://www.youtube.com/watch?v=EZoKPtzjdtQ">can exist</a>. These presets should serve as a good
+            base
+            but in the end they are tuned to my personal preference; see <a
+              href="https://github.com/jurf/fairbuds/blob/main/README.md#generating-autoeq-presets">this page</a> for
+            how to
+            generate your own.</p>
+        </div>
+        <div class="preset-row" id="custom-presets"></div>
 
-    <div class="section-heading">
-      <h3>Custom (app-compatible)</h3>
-      <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-appcompat"
-        title="More info">?</button>
-    </div>
-    <div class="info-content hidden" id="info-appcompat">
-      <p class="preset-description">Presets using only settings exposed by the official Fairbuds app. Use these if you
-        want to play with the values, as they have a constant band width. You will not achieve as good a treble response
-        though, as the EQ stops at 12&nbsp;kHz and does not affect higher frequencies enough.</p>
-    </div>
-    <div class="preset-row" id="app-presets"></div>
-  </div>
-
-  <!-- Custom EQ -->
-  <div class="card" id="eq-card">
-    <h2>Custom EQ</h2>
-    <div class="eq-scroll-wrap">
-      <div class="eq-inner">
-        <div class="eq-container" id="eq-sliders"></div>
-        <div class="q-row" id="q-row"></div>
+        <div class="section-heading">
+          <h3>Custom (app-compatible)</h3>
+          <button class="btn-round" data-action="info-toggle" aria-expanded="false" aria-controls="info-appcompat"
+            title="More info">?</button>
+        </div>
+        <div class="info-content hidden" id="info-appcompat">
+          <p class="preset-description">Presets using only settings exposed by the official Fairbuds app. Use these if
+            you
+            want to play with the values, as they have a constant band width. You will not achieve as good a treble
+            response
+            though, as the EQ stops at 12&nbsp;kHz and does not affect higher frequencies enough.</p>
+        </div>
+        <div class="preset-row" id="app-presets"></div>
       </div>
-    </div>
-    <div class="eq-actions">
-      <button id="eq-apply" class="btn btn-primary">Apply EQ</button>
-      <button id="eq-reset" class="btn btn-secondary">Reset</button>
-    </div>
-  </div>
 
-  <!-- Log -->
-  <div class="card">
-    <h2>Log</h2>
-    <div id="log"></div>
+      <!-- Custom EQ -->
+      <div class="card" id="eq-card">
+        <h2>Custom EQ</h2>
+        <div class="eq-scroll-wrap">
+          <div class="eq-inner">
+            <div class="eq-container" id="eq-sliders"></div>
+            <div class="q-row" id="q-row"></div>
+          </div>
+        </div>
+        <div class="eq-actions">
+          <button id="eq-apply" class="btn btn-primary">Apply EQ</button>
+          <button id="eq-reset" class="btn btn-secondary">Reset</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Response visualizer — standalone card -->
+    <div class="card" id="viz-card">
+      <h2>Custom EQ response</h2>
+      <canvas id="eq-viz" aria-label="EQ frequency response"></canvas>
+    </div>
+
+    <!-- Log -->
+    <div class="card" id="log-card">
+      <h2>Log</h2>
+      <div id="log"></div>
+    </div>
+
   </div>
 
   <footer>

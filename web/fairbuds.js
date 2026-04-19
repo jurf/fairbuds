@@ -581,6 +581,7 @@
 
     const textEl = document.getElementById(`knob-text-${i}`);
     if (textEl) textEl.textContent = val.toFixed(1);
+    scheduleRedraw();
   }
 
   function createKnob(i) {
@@ -705,6 +706,7 @@
     const db = decodeGain(encodedVal);
     const dbEl = document.getElementById(`db-val-${i}`);
     if (dbEl) dbEl.textContent = db >= 0 ? `+${db.toFixed(1)}` : `\u2212${Math.abs(db).toFixed(1)}`;
+    scheduleRedraw();
   }
 
   function buildEQSliders() {
@@ -801,6 +803,331 @@
       setSliderValue(i, GAIN_OFFSET);
       setKnobValue(i, DEFAULT_Q / 10);
     }
+  }
+
+  // =========================================================================
+  // EQ Frequency Response Visualizer
+  // =========================================================================
+
+  const SAMPLE_RATE = 44100;
+  const VIZ_DB_MIN = -12;
+  const VIZ_DB_MAX = 13.5;
+  const VIZ_FREQ_MIN = 20;
+  const VIZ_FREQ_MAX = 20000;
+  const VIZ_CURVE_POINTS = 512;
+
+  let vizCanvas = null;
+  let vizDirty = false;
+  let vizHoverX = null;
+
+  // Peaking biquad magnitude response (Audio EQ Cookbook — RBJ).
+  // Returns dB; short-circuits to 0 when gainDb ≈ 0.
+  function peakingMagnitudeDb(freq, fc, gainDb, Q) {
+    if (Math.abs(gainDb) < 0.001) return 0;
+
+    const A = Math.pow(10, gainDb / 40); // sqrt(10^(dB/20))
+    const w0 = 2 * Math.PI * fc / SAMPLE_RATE;
+    const sinW0 = Math.sin(w0);
+    const cosW0 = Math.cos(w0);
+    const alpha = sinW0 / (2 * Q);
+
+    const b0 = 1 + alpha * A;
+    const b1 = -2 * cosW0;
+    const b2 = 1 - alpha * A;
+    const a0 = 1 + alpha / A;
+    // a1 === b1 for peaking EQ
+    const a2 = 1 - alpha / A;
+
+    const w = 2 * Math.PI * freq / SAMPLE_RATE;
+    const cosW = Math.cos(w);
+    const sinW = Math.sin(w);
+    const cos2W = Math.cos(2 * w);
+    const sin2W = Math.sin(2 * w);
+
+    // H(e^jω) evaluated by substituting z = e^{jω}
+    const numRe = b0 + b1 * cosW + b2 * cos2W;
+    const numIm = - b1 * sinW - b2 * sin2W;
+    const denRe = a0 + b1 * cosW + a2 * cos2W;
+    const denIm = - b1 * sinW - a2 * sin2W;
+
+    const mag2 = (numRe * numRe + numIm * numIm) / (denRe * denRe + denIm * denIm);
+    return 10 * Math.log10(mag2);
+  }
+
+  // Sum all 8 peaking filter responses at each frequency in freqs[].
+  function computeCurve(freqs) {
+    return freqs.map(freq => {
+      let db = 0;
+      for (let i = 0; i < NUM_BANDS; i++) {
+        db += peakingMagnitudeDb(freq, FREQUENCIES[i], decodeGain(bandGains[i]), bandQs[i] / 10);
+      }
+      return db;
+    });
+  }
+
+  function scheduleRedraw() {
+    if (!vizDirty) {
+      vizDirty = true;
+      requestAnimationFrame(redrawViz);
+    }
+  }
+
+  function redrawViz() {
+    vizDirty = false;
+    drawEQ();
+  }
+
+  function drawEQ() {
+    if (!vizCanvas) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = vizCanvas.width / dpr;
+    const h = vizCanvas.height / dpr;
+    if (w <= 0 || h <= 0) return;
+
+    const cs = getComputedStyle(document.documentElement);
+    const colorBg = cs.getPropertyValue('--bg').trim();
+    const colorBrand = cs.getPropertyValue('--brand').trim();
+    const colorAccent = cs.getPropertyValue('--accent').trim();
+    const colorText = cs.getPropertyValue('--text').trim();
+
+    const ctx = vizCanvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const padLeft = 34;
+    const padRight = 28;
+    const padTop = 12;
+    const padBottom = 22;
+    const plotW = w - padLeft - padRight;
+    const plotH = h - padTop - padBottom;
+    if (plotW <= 0 || plotH <= 0) return;
+
+    function freqToX(f) {
+      return padLeft + (Math.log10(f / VIZ_FREQ_MIN) / Math.log10(VIZ_FREQ_MAX / VIZ_FREQ_MIN)) * plotW;
+    }
+    function dbToY(db) {
+      return padTop + (1 - (db - VIZ_DB_MIN) / (VIZ_DB_MAX - VIZ_DB_MIN)) * plotH;
+    }
+
+    const zeroY = dbToY(0);
+
+    // Horizontal dB grid lines
+    for (const db of [-12, -9, -6, -3, 0, 3, 6, 9, 12]) {
+      const y = dbToY(db);
+      ctx.save();
+      if (db === 0) {
+        ctx.strokeStyle = colorBrand;
+        ctx.globalAlpha = 0.4;
+        ctx.lineWidth = 1.5;
+      } else {
+        ctx.strokeStyle = colorText;
+        ctx.globalAlpha = 0.12;
+        ctx.lineWidth = 1;
+      }
+      ctx.beginPath();
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(padLeft + plotW, y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Vertical band-frequency grid lines
+    ctx.save();
+    ctx.strokeStyle = colorText;
+    ctx.globalAlpha = 0.12;
+    ctx.lineWidth = 1;
+    for (const fc of FREQUENCIES) {
+      const x = freqToX(fc);
+      ctx.beginPath();
+      ctx.moveTo(x, padTop);
+      ctx.lineTo(x, padTop + plotH);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Hearing-limit lines at 20 Hz and 20 kHz
+    ctx.save();
+    ctx.strokeStyle = colorText;
+    ctx.globalAlpha = 0.25;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    for (const fc of [VIZ_FREQ_MIN, VIZ_FREQ_MAX]) {
+      const x = freqToX(fc);
+      ctx.beginPath();
+      ctx.moveTo(x, padTop);
+      ctx.lineTo(x, padTop + plotH);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Build log-spaced frequency array and compute curve
+    const freqs = [];
+    for (let i = 0; i < VIZ_CURVE_POINTS; i++) {
+      const t = i / (VIZ_CURVE_POINTS - 1);
+      freqs.push(VIZ_FREQ_MIN * Math.pow(VIZ_FREQ_MAX / VIZ_FREQ_MIN, t));
+    }
+    const curve = computeCurve(freqs);
+    const xs = freqs.map(freqToX);
+    const ys = curve.map(dbToY);
+
+    // Fill between curve and 0 dB baseline
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(xs[0], zeroY);
+    for (let i = 0; i < xs.length; i++) ctx.lineTo(xs[i], ys[i]);
+    ctx.lineTo(xs[xs.length - 1], zeroY);
+    ctx.closePath();
+    ctx.fillStyle = colorAccent;
+    ctx.globalAlpha = 0.2;
+    ctx.fill();
+    ctx.restore();
+
+    // Curve stroke
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(xs[0], ys[0]);
+    for (let i = 1; i < xs.length; i++) ctx.lineTo(xs[i], ys[i]);
+    ctx.strokeStyle = colorAccent;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Band markers — 5 px circles on the curve at each band frequency
+    ctx.save();
+    ctx.fillStyle = colorAccent;
+    for (let i = 0; i < NUM_BANDS; i++) {
+      const x = freqToX(FREQUENCIES[i]);
+      let db = 0;
+      for (let j = 0; j < NUM_BANDS; j++) {
+        db += peakingMagnitudeDb(FREQUENCIES[i], FREQUENCIES[j], decodeGain(bandGains[j]), bandQs[j] / 10);
+      }
+      ctx.beginPath();
+      ctx.arc(x, dbToY(db), 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // dB axis labels + title
+    ctx.save();
+    ctx.font = '10px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = colorText;
+    ctx.globalAlpha = 0.5;
+    ctx.textBaseline = 'middle';
+    for (const db of [12, 6, 0, -6, -12]) {
+      ctx.fillText((db > 0 ? '+' : '') + db, padLeft - 4, dbToY(db));
+    }
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('dB', padLeft - 4, padTop - 2);
+    ctx.restore();
+
+    // Frequency axis labels (band freqs + 20 Hz / 20 kHz limits)
+    ctx.save();
+    ctx.font = '10px system-ui, -apple-system, sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = colorText;
+    ctx.globalAlpha = 0.5;
+    for (const fc of [VIZ_FREQ_MIN, ...FREQUENCIES, VIZ_FREQ_MAX]) {
+      const x = freqToX(fc);
+      ctx.textAlign = fc === VIZ_FREQ_MIN ? 'left' : fc === VIZ_FREQ_MAX ? 'right' : 'center';
+      ctx.fillText(formatFreq(fc), x, padTop + plotH + 4);
+    }
+    // Hz axis title — right of all freq labels
+    ctx.textAlign = 'right';
+    ctx.fillText('Hz', w - 4, padTop + plotH + 4);
+    ctx.restore();
+
+    // Hover crosshair + tooltip
+    if (vizHoverX !== null) {
+      const cx = Math.max(padLeft, Math.min(padLeft + plotW, vizHoverX));
+      const t = (cx - padLeft) / plotW;
+      const hoverFreq = VIZ_FREQ_MIN * Math.pow(VIZ_FREQ_MAX / VIZ_FREQ_MIN, t);
+      let hoverDb = 0;
+      for (let i = 0; i < NUM_BANDS; i++) {
+        hoverDb += peakingMagnitudeDb(hoverFreq, FREQUENCIES[i], decodeGain(bandGains[i]), bandQs[i] / 10);
+      }
+      const cy = dbToY(hoverDb);
+
+      // Vertical crosshair line
+      ctx.save();
+      ctx.strokeStyle = colorText;
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, padTop);
+      ctx.lineTo(cx, padTop + plotH);
+      ctx.stroke();
+      ctx.restore();
+
+      // Dot on curve
+      ctx.save();
+      ctx.fillStyle = colorAccent;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Tooltip
+      const freqStr = hoverFreq >= 1000
+        ? (hoverFreq / 1000).toFixed(1) + '\u202fkHz'
+        : Math.round(hoverFreq) + '\u202fHz';
+      const dbStr = (hoverDb >= 0 ? '+' : '\u2212') + Math.abs(hoverDb).toFixed(1) + '\u202fdB';
+      const label = freqStr + '   ' + dbStr;
+
+      ctx.save();
+      ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+      const tw = ctx.measureText(label).width;
+      const th = 13;
+      const tp = 5;
+      const gap = 10;
+      let tx = cx + gap;
+      let ty = cy - th / 2 - tp;
+      if (tx + tw + tp * 2 > padLeft + plotW + 4) tx = cx - gap - tw - tp * 2;
+      ty = Math.max(padTop + 2, Math.min(padTop + plotH - th - tp * 2 - 2, ty));
+      ctx.fillStyle = colorBrand;
+      ctx.globalAlpha = 0.92;
+      ctx.beginPath();
+      ctx.roundRect(tx - tp, ty, tw + tp * 2, th + tp * 2, 4);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = colorBg;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, tx, ty + tp + th / 2);
+      ctx.restore();
+    }
+  }
+
+  function initVisualizer() {
+    vizCanvas = document.getElementById('eq-viz');
+    if (!vizCanvas) return;
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      vizCanvas.width = Math.round(vizCanvas.offsetWidth * dpr);
+      vizCanvas.height = Math.round(vizCanvas.offsetHeight * dpr);
+      scheduleRedraw();
+    }
+
+    new ResizeObserver(resize).observe(vizCanvas);
+    new MutationObserver(() => scheduleRedraw()).observe(
+      document.documentElement,
+      { attributes: true, attributeFilter: ['data-theme'] }
+    );
+
+    vizCanvas.addEventListener('pointermove', (e) => {
+      const rect = vizCanvas.getBoundingClientRect();
+      vizHoverX = e.clientX - rect.left;
+      scheduleRedraw();
+    });
+    vizCanvas.addEventListener('pointerleave', () => {
+      vizHoverX = null;
+      scheduleRedraw();
+    });
+
+    scheduleRedraw();
   }
 
   // =========================================================================
@@ -901,6 +1228,7 @@
 
   // Build sliders on load
   buildEQSliders();
+  initVisualizer();
   enableControls(false);
 
   // Check Web Bluetooth support

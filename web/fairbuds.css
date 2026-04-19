@@ -62,6 +62,7 @@ h1 {
     background: var(--surface);
     border-radius: var(--card-radius);
     padding: 32px;
+    padding-top: 24px;
     width: 100%;
     max-width: 680px;
     margin-bottom: 16px;
@@ -567,6 +568,69 @@ footer {
     font-variant-numeric: tabular-nums;
 }
 
+/* Two-column page layout */
+.page-layout {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.main-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+#viz-card {
+    background: var(--surface-accent);
+    display: flex;
+    flex-direction: column;
+}
+
+#eq-viz {
+    display: block;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 180px;
+}
+
+@media (min-width: 960px) {
+    .page-layout {
+        display: grid;
+        grid-template-columns: 520px 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "main viz"
+            "log  viz";
+        max-width: 1200px;
+        column-gap: 24px;
+        align-items: start;
+    }
+
+    .main-col {
+        grid-area: main;
+    }
+
+    #viz-card {
+        grid-area: viz;
+        max-width: none;
+        min-width: 320px;
+        min-height: 520px;
+        position: sticky;
+        top: 20px;
+        margin-bottom: 0;
+    }
+
+    #log-card {
+        grid-area: log;
+        max-width: none;
+        margin-bottom: 0;
+    }
+}
+
 @media (max-width: 500px) {
     .eq-band .freq-label {
         font-size: 0.6rem;
@@ -574,5 +638,6 @@ footer {
 
     .card {
         padding: 20px;
+        padding-top: 16px;
     }
 }
